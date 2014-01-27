@@ -3,6 +3,8 @@ const { classes: Cc, interfaces: Ci, utils: Cu } = Components;
 Cu.import("resource://gre/modules/Home.jsm");
 Cu.import('resource://gre/modules/Services.jsm');
 
+const LOGTAG = 'mcomella.rss: ';
+
 const PANEL_ID = 'me.mcomella.rss';
 const DATASET_ID = 'me.mcomella.rss.dataset';
 
@@ -151,5 +153,5 @@ function shutdown(aData, aReason) {
 
 function log(s) {
   let args = Array.prototype.slice.call(arguments, 0);
-  Services.console.logStringMessage(args.join(' '));
+  Services.console.logStringMessage(LOGTAG + args.join(' '));
 }
