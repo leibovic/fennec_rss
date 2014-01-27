@@ -40,10 +40,10 @@ function parseFeed(rssURL, onFinish) {
       //Services.console.logStringMessage('VERSION: ' + feedResult.version);
       let feedDoc = feedResult.doc;
       let feed = feedDoc.QueryInterface(Ci.nsIFeed);
+      log('Feed received with ' + feed.items.length + ' items.');
       if (feed.items.length == 0)
         return;
       //Services.console.logStringMessage('FEED TITLE: ' + feed.title.plainText());
-      log('Feed received with ' + feed.items.length + ' items.');
       let entries = [];
       for (let i = 0; i < feed.items.length; ++i) {
         let entry = feed.items.queryElementAt(i, Ci.nsIFeedEntry);
