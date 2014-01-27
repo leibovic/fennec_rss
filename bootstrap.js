@@ -1,6 +1,20 @@
 const { classes: Cc, interfaces: Ci, utils: Cu } = Components;
 
+Cu.import("resource://gre/modules/Home.jsm");
 Cu.import('resource://gre/modules/Services.jsm');
+
+const PANEL_ID = 'me.mcomella.rss';
+const DATASET_ID = 'me.mcomella.rss.dataset';
+
+const PANEL_CONFIG = {
+   id: PANEL_ID,
+   title: 'RSS',
+   layout: Home.panels.Layout.FRAME,
+   views: [{
+     type: Home.panels.View.LIST,
+     dataset: DATASET_ID
+   }]
+};
 
 const EXAMPLE_URI = 'http://rss.cnn.com/rss/cnn_topstories.rss';
 
@@ -61,6 +75,8 @@ function loadIntoWindow(window) {
   if (!window) { return; }
   // When button clicked, read for feeds, "subscribe", open HTML page?
 
+  Home.panels.add(PANEL_CONFIG);
+
     // TODO: Get feeds from page.
   menuID = window.NativeWindow.menu.add({
     name: 'Replace doc w/ feed contents',
@@ -71,6 +87,9 @@ function loadIntoWindow(window) {
 
 function unloadFromWindow(window) {
   if (!window) { return; }
+
+  Home.panels.remove(PANEL_ID);
+
   window.NativeWindow.menu.remove(menuID);
   menuID = null;
 }
