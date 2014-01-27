@@ -1,7 +1,9 @@
 const { classes: Cc, interfaces: Ci, utils: Cu } = Components;
 
 Cu.import("resource://gre/modules/Home.jsm");
+Cu.import("resource://gre/modules/HomeProvider.jsm");
 Cu.import('resource://gre/modules/Services.jsm');
+Cu.import("resource://gre/modules/Task.jsm");
 
 const LOGTAG = 'mcomella.rss: ';
 
@@ -32,7 +34,36 @@ function replaceDocWithFeed(window, feedURI) {
     let entryText = feedToEntrySummaryArr(feed).join('\n\n');
     let doc = window.BrowserApp.selectedBrowser.contentDocument;
     doc.body.innerHTML = '<html><body><h1>' + title + '</h1>' + entryText + '</body></html>';
+
+    Task.spawn(function() {
+      log('Spawn');
+      let storage = HomeProvider.getStorage(DATASET_ID);
+      log('Got storage');
+      //yield storage.deleteAll(); // YOLO!
+      log('deleted all');
+      yield storage.save(feedToDataset(feed));
+      log('saved!');
+    }).then(function () {
+      log('fin');
+    }, function (ex) {
+      log(ex);
+    });
   });
+}
+
+function feedToDataset(feed) {
+  // TODO: Can use map?
+  let dataset = [];
+  for (let i = 0; i < feed.items.length; i++) {
+    let entry = feed.items.queryElementAt(i, Ci.nsIFeedEntry);
+    entry.QueryInterface(Ci.nsIFeedContainer);
+    entry.link.QueryInterface(Ci.nsIURI); // TODO: necessary?
+    dataset.push({
+      url: entry.link.spec,
+      primary_text: entry.summary.plainText()
+    });
+  }
+  return dataset;
 }
 
 function parseFeed(rssURL, onFinish) {
