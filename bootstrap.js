@@ -6,6 +6,7 @@ Cu.import('resource://gre/modules/Services.jsm');
 const PANEL_ID = 'me.mcomella.rss';
 const DATASET_ID = 'me.mcomella.rss.dataset';
 
+// TODO: Can I add to Home.panels.Layout/View?
 const PANEL_CONFIG = {
    id: PANEL_ID,
    title: 'RSS',
