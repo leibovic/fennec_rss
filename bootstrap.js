@@ -21,9 +21,6 @@ const EXAMPLE_URI = 'http://rss.cnn.com/rss/cnn_topstories.rss';
 
 var menuID;
 
-// TODO: Not this.
-function log(s) { Services.console.logStringMessage(s); }
-
 function replaceDocWithFeed(window, feedURI) {
   feedURI = feedURI || EXAMPLE_URI;
 
@@ -43,7 +40,7 @@ function parseFeed(rssURL, onFinish) {
       //Services.console.logStringMessage('VERSION: ' + feedResult.version);
       let feedDoc = feedResult.doc;
       let feed = feedDoc.QueryInterface(Ci.nsIFeed);
-      log('Feed received with ' + feed.items.length + ' items.');
+      log('Feed received with', feed.items.length, 'items.');
       if (feed.items.length == 0)
         return;
 
@@ -150,4 +147,9 @@ function shutdown(aData, aReason) {
     let domWindow = windows.getNext().QueryInterface(Ci.nsIDOMWindow);
     unloadFromWindow(domWindow);
   }
+}
+
+function log(s) {
+  let args = Array.prototype.slice.call(arguments, 0);
+  Services.console.logStringMessage(args.join(' '));
 }
