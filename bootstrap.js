@@ -12,7 +12,7 @@ var menuID;
 function log(s) { Services.console.logStringMessage(s); }
 
 function replaceDocWithFeed(window, feedURI) {
-  if (!feedURI) feedURI = EXAMPLE_URI;
+  feedURI = feedURI || EXAMPLE_URI;
 
   // TODO: Get results well.
   parseFeed(feedURI, function (title, entryText) {
