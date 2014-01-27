@@ -27,7 +27,9 @@ function replaceDocWithFeed(window, feedURI) {
   feedURI = feedURI || EXAMPLE_URI;
 
   // TODO: Get results well.
-  parseFeed(feedURI, function (title, entryText) {
+  parseFeed(feedURI, function (feed) {
+    let title = feed.title.plainText();
+    let entryText = feedToEntrySummaryArr(feed).join('\n\n');
     let doc = window.BrowserApp.selectedBrowser.contentDocument;
     doc.body.innerHTML = '<html><body><h1>' + title + '</h1>' + entryText + '</body></html>';
   });
@@ -43,16 +45,8 @@ function parseFeed(rssURL, onFinish) {
       log('Feed received with ' + feed.items.length + ' items.');
       if (feed.items.length == 0)
         return;
-      //Services.console.logStringMessage('FEED TITLE: ' + feed.title.plainText());
-      let entries = [];
-      for (let i = 0; i < feed.items.length; ++i) {
-        let entry = feed.items.queryElementAt(i, Ci.nsIFeedEntry);
-        entry.QueryInterface(Ci.nsIFeedContainer);
-        entries.push(entry.summary.plainText());
-        //Services.console.logStringMessage('SUMMARY: ' + entry.summary.plainText());
-      }
 
-      onFinish(feed.title.plainText(), entries.join('\n\n'));
+      onFinish(feed);
     }
   };
 
@@ -70,6 +64,17 @@ function parseFeed(rssURL, onFinish) {
   }), false);
   xhr.send(null);
 }
+
+function feedToEntrySummaryArr(feed) {
+  let entries = [];
+  for (let i = 0; i < feed.items.length; ++i) {
+    let entry = feed.items.queryElementAt(i, Ci.nsIFeedEntry);
+    entry.QueryInterface(Ci.nsIFeedContainer);
+    entries.push(entry.summary.plainText());
+  }
+  return entries;
+}
+
 
 function loadIntoWindow(window) {
   if (!window) { return; }
