@@ -46,7 +46,12 @@ function replaceDocWithFeed(window, feedURI) {
     }).then(function () {
       log('fin');
     }, function (ex) {
-      log(ex);
+      log('Error!');
+      if (!ex.errors) { return; }
+
+      ex.errors.forEach(function (error) {
+        log(error.message);
+      });
     });
   });
 }
