@@ -60,7 +60,8 @@ function feedToDataset(feed) {
     entry.link.QueryInterface(Ci.nsIURI); // TODO: necessary?
     dataset.push({
       url: entry.link.spec,
-      primary_text: entry.summary.plainText()
+      title: entry.title.plainText(),
+      description: entry.summary.plainText()
     });
   }
   return dataset;
