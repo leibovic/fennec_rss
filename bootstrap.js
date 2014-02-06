@@ -18,7 +18,8 @@ const PANEL_CONFIG = {
    views: [{
      type: Home.panels.View.LIST,
      dataset: DATASET_ID
-   }]
+   }],
+   autoInstall: true
 };
 
 const EXAMPLE_URI = 'http://rss.cnn.com/rss/cnn_topstories.rss';
