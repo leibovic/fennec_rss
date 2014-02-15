@@ -20,7 +20,7 @@ const PANEL_CONFIG = {
      type: Home.panels.View.LIST,
      dataset: DATASET_ID
    }],
-   autoInstall: true
+   action: Home.panels.Action.INSTALL,
 };
 
 //const EXAMPLE_URI = 'http://rss.cnn.com/rss/cnn_topstories.rss';
