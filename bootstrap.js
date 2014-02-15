@@ -13,7 +13,8 @@ const DATASET_ID = 'me.mcomella.rss.dataset';
 // TODO: Can I add to Home.panels.Layout/View?
 const PANEL_CONFIG = {
    id: PANEL_ID,
-   title: 'RSS',
+   //title: 'RSS',
+   title: 'World Cup 2014',
    layout: Home.panels.Layout.FRAME,
    views: [{
      type: Home.panels.View.LIST,
@@ -22,7 +23,8 @@ const PANEL_CONFIG = {
    autoInstall: true
 };
 
-const EXAMPLE_URI = 'http://rss.cnn.com/rss/cnn_topstories.rss';
+//const EXAMPLE_URI = 'http://rss.cnn.com/rss/cnn_topstories.rss';
+const EXAMPLE_URI = 'http://www.goal.com/de/feeds/news?fmt=rss&ICID=HP'
 
 var menuID;
 
