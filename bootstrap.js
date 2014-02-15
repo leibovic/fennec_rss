@@ -42,7 +42,32 @@ function replaceDocWithFeed(window, feedURI) {
       log('Spawn');
       let storage = HomeProvider.getStorage(DATASET_ID);
       log('Got storage');
-      //yield storage.deleteAll(); // YOLO!
+      yield storage.deleteAll(); // YOLO!
+      log('deleted all');
+      yield storage.save(feedToDataset(feed));
+      log('saved!');
+    }).then(function () {
+      log('fin');
+    }, function (ex) {
+      log('Error!');
+      if (!ex.errors) { return; }
+
+      ex.errors.forEach(function (error) {
+        log(error.message);
+      });
+    });
+  });
+}
+
+function getAndSaveFeed(feedURI) {
+  feedURI = feedURI || EXAMPLE_URI;
+
+  parseFeed(feedURI, function (feed) {
+    Task.spawn(function() {
+      log('Spawn');
+      let storage = HomeProvider.getStorage(DATASET_ID);
+      log('Got storage');
+      yield storage.deleteAll(); // YOLO!
       log('deleted all');
       yield storage.save(feedToDataset(feed));
       log('saved!');
@@ -121,13 +146,16 @@ function loadIntoWindow(window) {
   // When button clicked, read for feeds, "subscribe", open HTML page?
 
   Home.panels.add(PANEL_CONFIG);
+  getAndSaveFeed();
 
-    // TODO: Get feeds from page.
+  // TODO: Get feeds from page.
+  /*
   menuID = window.NativeWindow.menu.add({
     name: 'Replace doc w/ feed contents',
     icon: null,
     callback: function () { replaceDocWithFeed(window); }
   });
+  */
 }
 
 function unloadFromWindow(window) {
