@@ -51,6 +51,9 @@ function replaceDocWithFeed(window, feedURI) {
     }, function (ex) {
       log('Error!');
       if (!ex.errors) { return; }
+      if (ex.message) {
+        log(ex.message);
+      }
 
       ex.errors.forEach(function (error) {
         log(error.message);
@@ -61,6 +64,8 @@ function replaceDocWithFeed(window, feedURI) {
 
 function getAndSaveFeed(feedURI) {
   feedURI = feedURI || EXAMPLE_URI;
+
+  log('Retrieving feed:', feedURI);
 
   parseFeed(feedURI, function (feed) {
     Task.spawn(function() {
@@ -91,11 +96,30 @@ function feedToDataset(feed) {
     let entry = feed.items.queryElementAt(i, Ci.nsIFeedEntry);
     entry.QueryInterface(Ci.nsIFeedContainer);
     entry.link.QueryInterface(Ci.nsIURI); // TODO: necessary?
+
     dataset.push({
       url: entry.link.spec,
       title: entry.title.plainText(),
       description: entry.summary.plainText()
     });
+
+    // Get the image URL.
+    if (entry.enclosures && entry.enclosures.length > 0) {
+      for (let j = 0; j < entry.enclosures.length; j++) {
+        let enc = entry.enclosures.queryElementAt(j, Ci.nsIWritablePropertyBag2);
+
+        // Ignore ambiguous enclosures.
+        if (!(enc.hasKey('url') && enc.hasKey('type'))) {
+          continue;
+        }
+
+        if (enc.get('type').startsWith('image/')) {
+          dataset[i].image_url = enc.get('url');
+          // I'm fine with the first one.
+          break;
+        }
+      }
+    }
   }
   return dataset;
 }
