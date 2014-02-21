@@ -193,7 +193,14 @@ function unloadFromWindow(window) {
 
 function install(aData, aReason) {}
 
-function uninstall(aData, aReason) {}
+function uninstall(aData, aReason) {
+  let storage = HomeProvider.getStorage(DATASET_ID);
+  Task.spawn(function() {
+    yield storage.deleteAll(); // YOLO!
+  }).then(function () {
+    log('Deleted data');
+  });
+}
 
 // via https://developer.mozilla.org/en-US/Add-ons/Firefox_for_Android/Initialization_and_Cleanup:
 var windowListener = {
