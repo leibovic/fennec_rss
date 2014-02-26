@@ -5,8 +5,6 @@ Cu.import("resource://gre/modules/HomeProvider.jsm");
 Cu.import('resource://gre/modules/Services.jsm');
 Cu.import("resource://gre/modules/Task.jsm");
 
-const LOGTAG = 'mcomella.rss: ';
-
 const PANEL_ID = 'me.mcomella.rss';
 const DATASET_ID = 'me.mcomella.rss.dataset';
 
@@ -26,6 +24,16 @@ const PANEL_CONFIG = {
 //const EXAMPLE_URI = 'http://rss.cnn.com/rss/cnn_topstories.rss';
 const EXAMPLE_URI = 'http://www.goal.com/de/feeds/news?fmt=rss&ICID=HP'
 
+function reportErrors(e) {
+  if (!e.errors) {
+    return;
+  }
+  if (e.message) {
+    Cu.reportError(e.message);
+  }
+  e.errors.forEach(error => Cu.reportError(error.message));
+}
+
 var menuID;
 
 function replaceDocWithFeed(window, feedURI) {
@@ -39,53 +47,22 @@ function replaceDocWithFeed(window, feedURI) {
     doc.body.innerHTML = '<html><body><h1>' + title + '</h1>' + entryText + '</body></html>';
 
     Task.spawn(function() {
-      log('Spawn');
       let storage = HomeProvider.getStorage(DATASET_ID);
-      log('Got storage');
       yield storage.deleteAll(); // YOLO!
-      log('deleted all');
       yield storage.save(feedToDataset(feed));
-      log('saved!');
-    }).then(function () {
-      log('fin');
-    }, function (ex) {
-      log('Error!');
-      if (!ex.errors) { return; }
-      if (ex.message) {
-        log(ex.message);
-      }
-
-      ex.errors.forEach(function (error) {
-        log(error.message);
-      });
-    });
+    }).then(null, reportError);
   });
 }
 
 function getAndSaveFeed(feedURI) {
   feedURI = feedURI || EXAMPLE_URI;
 
-  log('Retrieving feed:', feedURI);
-
   parseFeed(feedURI, function (feed) {
     Task.spawn(function() {
-      log('Spawn');
       let storage = HomeProvider.getStorage(DATASET_ID);
-      log('Got storage');
       yield storage.deleteAll(); // YOLO!
-      log('deleted all');
       yield storage.save(feedToDataset(feed));
-      log('saved!');
-    }).then(function () {
-      log('fin');
-    }, function (ex) {
-      log('Error!');
-      if (!ex.errors) { return; }
-
-      ex.errors.forEach(function (error) {
-        log(error.message);
-      });
-    });
+    }).then(null, reportErrors);
   });
 }
 
@@ -131,10 +108,9 @@ function parseFeed(rssURL, onFinish) {
       //Services.console.logStringMessage('VERSION: ' + feedResult.version);
       let feedDoc = feedResult.doc;
       let feed = feedDoc.QueryInterface(Ci.nsIFeed);
-      log('Feed received with', feed.items.length, 'items.');
-      if (feed.items.length == 0)
+      if (feed.items.length == 0) {
         return;
-
+      }
       onFinish(feed);
     }
   };
@@ -197,9 +173,7 @@ function uninstall(aData, aReason) {
   let storage = HomeProvider.getStorage(DATASET_ID);
   Task.spawn(function() {
     yield storage.deleteAll(); // YOLO!
-  }).then(function () {
-    log('Deleted data');
-  });
+  }).then(null, reportErrors);
 }
 
 // via https://developer.mozilla.org/en-US/Add-ons/Firefox_for_Android/Initialization_and_Cleanup:
@@ -248,9 +222,4 @@ function shutdown(aData, aReason) {
     let domWindow = windows.getNext().QueryInterface(Ci.nsIDOMWindow);
     unloadFromWindow(domWindow);
   }
-}
-
-function log(s) {
-  let args = Array.prototype.slice.call(arguments, 0);
-  Services.console.logStringMessage(LOGTAG + args.join(' '));
 }
