@@ -116,6 +116,9 @@ function addFeed(feed) {
   storeId(panelId, PANEL_IDS_PREF);
   storeId(datasetId, DATASET_IDS_PREF);
 
+  // Store the feed URL so that we can update the feed in the future.
+  Services.prefs.setCharPref(datasetId, feed.href);
+
   function optionsCallback() {
     return {
       title: feed.title,
@@ -130,8 +133,14 @@ function addFeed(feed) {
   Home.panels.register(panelId, optionsCallback);
   Home.panels.install(panelId);
 
+  // Immediately fetch items on install.
   getAndSaveFeed(feed.href, datasetId, function() {
     openPanel(panelId);
+  });
+
+  // Add periodic sync to update feed once per hour.
+  HomeProvider.addPeriodicSync(datasetId, 3600, function() {
+    getAndSaveFeed(feed.href, datasetId);
   });
 }
 
@@ -204,22 +213,21 @@ function uninstall(aData, aReason) {
       Home.panels.uninstall(panelId);
       Home.panels.unregister(panelId);
     });
-  } catch (e) {
-    // Nothing to clean up.
-  }
+  } catch (e) {}
 
   // Delete all data.
   try {
     let datasetIds = JSON.parse(Services.prefs.getCharPref(DATASET_IDS_PREF));
     datasetIds.forEach(function(datasetId) {
+      Services.prefs.removePeriodicSync(datasetId);
+      Services.prefs.clearUserPref(datasetId);
+
       Task.spawn(function() {
         let storage = HomeProvider.getStorage(datasetId);
         yield storage.deleteAll();
       }).then(null, reportErrors);
     });
-  } catch (e) {
-    // Nothing to clean up.
-  }
+  } catch (e) {}
 }
 
 // via https://developer.mozilla.org/en-US/Add-ons/Firefox_for_Android/Initialization_and_Cleanup:
@@ -249,6 +257,25 @@ function startup(aData, aReason) {
 
   // Load into any new windows
   wm.addListener(windowListener);
+
+  // Register any existing panels.
+  try {
+    let panelIds = JSON.parse(Services.prefs.getCharPref(PANEL_IDS_PREF));
+    panelIds.forEach(function(panelId) {
+      Home.panels.register(panelId);
+    });
+  } catch (e) {}
+
+  // Add periodic sync for existing feeds.
+  try {
+    let datasetIds = JSON.parse(Services.prefs.getCharPref(DATASET_IDS_PREF));
+    datasetIds.forEach(function(datasetId) {
+      HomeProvider.addPeriodicSync(datasetId, 3600, function() {
+        let feedUrl = Services.prefs.getCharPref(datasetId);
+        getAndSaveFeed(feedUrl, datasetId);
+      });
+    });
+  } catch (e) {}
 }
 
 function shutdown(aData, aReason) {
