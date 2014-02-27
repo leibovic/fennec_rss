@@ -2,27 +2,12 @@ const { classes: Cc, interfaces: Ci, utils: Cu } = Components;
 
 Cu.import("resource://gre/modules/Home.jsm");
 Cu.import("resource://gre/modules/HomeProvider.jsm");
+Cu.import("resource://gre/modules/Prompt.jsm");
 Cu.import('resource://gre/modules/Services.jsm');
 Cu.import("resource://gre/modules/Task.jsm");
 
-const PANEL_ID = 'me.mcomella.rss';
-const DATASET_ID = 'me.mcomella.rss.dataset';
-
-// TODO: Can I add to Home.panels.Layout/View?
-const PANEL_CONFIG = {
-   id: PANEL_ID,
-   //title: 'RSS',
-   title: 'World Cup 2014',
-   layout: Home.panels.Layout.FRAME,
-   views: [{
-     type: Home.panels.View.LIST,
-     dataset: DATASET_ID
-   }],
-   action: Home.panels.Action.INSTALL,
-};
-
-//const EXAMPLE_URI = 'http://rss.cnn.com/rss/cnn_topstories.rss';
-const EXAMPLE_URI = 'http://www.goal.com/de/feeds/news?fmt=rss&ICID=HP'
+const PANEL_IDS_PREF = "home.rss.panelIds";
+const DATASET_IDS_PREF = "home.rss.datasetIds";
 
 function reportErrors(e) {
   if (!e.errors) {
@@ -34,47 +19,29 @@ function reportErrors(e) {
   e.errors.forEach(error => Cu.reportError(error.message));
 }
 
-var menuID;
+function openPanel(panelId) {
+  Services.wm.getMostRecentWindow("navigator:browser").BrowserApp.loadURI("about:home?page=" + panelId);
+}
 
-function replaceDocWithFeed(window, feedURI) {
-  feedURI = feedURI || EXAMPLE_URI;
-
-  // TODO: Get results well.
-  parseFeed(feedURI, function (feed) {
-    let title = feed.title.plainText();
-    let entryText = feedToEntrySummaryArr(feed).join('\n\n');
-    let doc = window.BrowserApp.selectedBrowser.contentDocument;
-    doc.body.innerHTML = '<html><body><h1>' + title + '</h1>' + entryText + '</body></html>';
-
+function getAndSaveFeed(feedUrl, datasetId, callback) {
+  parseFeed(feedUrl, function (feed) {
     Task.spawn(function() {
-      let storage = HomeProvider.getStorage(DATASET_ID);
-      yield storage.deleteAll(); // YOLO!
-      yield storage.save(feedToDataset(feed));
-    }).then(null, reportError);
+      let storage = HomeProvider.getStorage(datasetId);
+      yield storage.deleteAll();
+      yield storage.save(feedToItems(feed));
+    }).then(callback, reportErrors);
   });
 }
 
-function getAndSaveFeed(feedURI) {
-  feedURI = feedURI || EXAMPLE_URI;
-
-  parseFeed(feedURI, function (feed) {
-    Task.spawn(function() {
-      let storage = HomeProvider.getStorage(DATASET_ID);
-      yield storage.deleteAll(); // YOLO!
-      yield storage.save(feedToDataset(feed));
-    }).then(null, reportErrors);
-  });
-}
-
-function feedToDataset(feed) {
+function feedToItems(feed) {
   // TODO: Can use map?
-  let dataset = [];
+  let items = [];
   for (let i = 0; i < feed.items.length; i++) {
     let entry = feed.items.queryElementAt(i, Ci.nsIFeedEntry);
     entry.QueryInterface(Ci.nsIFeedContainer);
     entry.link.QueryInterface(Ci.nsIURI); // TODO: necessary?
 
-    dataset.push({
+    items.push({
       url: entry.link.spec,
       title: entry.title.plainText(),
       description: entry.summary.plainText()
@@ -91,21 +58,19 @@ function feedToDataset(feed) {
         }
 
         if (enc.get('type').startsWith('image/')) {
-          dataset[i].image_url = enc.get('url');
+          items[i].image_url = enc.get('url');
           // I'm fine with the first one.
           break;
         }
       }
     }
   }
-  return dataset;
+  return items;
 }
 
-function parseFeed(rssURL, onFinish) {
-  // via mfinkle.
+function parseFeed(feedUrl, onFinish) {
   let listener = {
     handleResult: function handleResult(feedResult) {
-      //Services.console.logStringMessage('VERSION: ' + feedResult.version);
       let feedDoc = feedResult.doc;
       let feed = feedDoc.QueryInterface(Ci.nsIFeed);
       if (feed.items.length == 0) {
@@ -116,64 +81,145 @@ function parseFeed(rssURL, onFinish) {
   };
 
   let xhr = Cc['@mozilla.org/xmlextras/xmlhttprequest;1'].createInstance(Ci.nsIXMLHttpRequest);
-  xhr.open('GET', rssURL, true);
+  xhr.open('GET', feedUrl, true);
   xhr.overrideMimeType('text/xml');
 
   xhr.addEventListener('load', (function () {
     if (xhr.status == 200) {
       let processor = Cc['@mozilla.org/feed-processor;1'].createInstance(Ci.nsIFeedProcessor);
       processor.listener = listener;
-      let uri = Services.io.newURI(rssURL, null, null);
+      let uri = Services.io.newURI(feedUrl, null, null);
       processor.parseFromString(xhr.responseText, uri);
     }
   }), false);
   xhr.send(null);
 }
 
-function feedToEntrySummaryArr(feed) {
-  let entries = [];
-  for (let i = 0; i < feed.items.length; ++i) {
-    let entry = feed.items.queryElementAt(i, Ci.nsIFeedEntry);
-    entry.QueryInterface(Ci.nsIFeedContainer);
-    entries.push(entry.summary.plainText());
+// Adds id to an array of ids stored in a pref.
+function storeId(id, pref) {
+  let ids;
+  try {
+    ids = JSON.parse(Services.prefs.getCharPref(pref));
+  } catch (e) {
+    ids = [];
   }
-  return entries;
+  ids.push(id);
+  Services.prefs.setCharPref(pref, JSON.stringify(ids));
 }
 
+function addFeed(feed) {
+  let uuidgen = Cc["@mozilla.org/uuid-generator;1"].getService(Ci.nsIUUIDGenerator);
+  let panelId = uuidgen.generateUUID().toString();
+  let datasetId = uuidgen.generateUUID().toString();
+
+  // Store panelId and datasetId in prefs so that we can remove them in the future.
+  storeId(panelId, PANEL_IDS_PREF);
+  storeId(datasetId, DATASET_IDS_PREF);
+
+  function optionsCallback() {
+    return {
+      title: feed.title,
+      layout: Home.panels.Layout.FRAME,
+      views: [{
+        type: Home.panels.View.LIST,
+        dataset: datasetId
+      }]
+    };
+  }
+
+  Home.panels.register(panelId, optionsCallback);
+  Home.panels.install(panelId);
+
+  getAndSaveFeed(feed.href, datasetId, function() {
+    openPanel(panelId);
+  });
+}
+
+// Show the user a promt to choose a feed to subscribe to.
+function chooseFeed(window, feeds) {
+  let p = new Prompt({
+    window: window
+  }).setSingleChoiceItems(feeds.map(function(feed) {
+    return { label: feed.title || feed.href }
+  })).show(function(data) {
+    let feedIndex = data.button;
+    if (feedIndex > -1) {
+      addFeed(feeds[feedIndex]);
+    }
+  });
+}
+
+let pageActionId = null;
+
+function pageShow(event) {
+  let chromeWin = Services.wm.getMostRecentWindow("navigator:browser");
+  let selectedTab = chromeWin.BrowserApp.selectedTab;
+
+  // Ignore load events on frames and other documents.
+  if (event.target != selectedTab.browser.contentDocument) {
+    return;
+  }
+
+  // Remove any current page action item.
+  if (pageActionId) {
+    chromeWin.NativeWindow.pageactions.remove(pageActionId);
+    pageActionId = null;
+  }
+
+  let feeds = selectedTab.browser.feeds;
+
+  // Bail if there are no feeds for this page.
+  if (!feeds || feeds.length == 0) {
+    return;
+  }
+
+  pageActionId = chromeWin.NativeWindow.pageactions.add({
+    icon: "drawable://icon_openinapp",
+    title: "Add RSS feed to home page",
+    clickCallback: function() {
+      if (feeds.length == 1) {
+        addFeed(feeds[0]);
+      } else {
+        chooseFeed(selectedTab.browser.contentWindow, feeds);
+      }
+    }
+  });
+}
 
 function loadIntoWindow(window) {
-  if (!window) { return; }
-  // When button clicked, read for feeds, "subscribe", open HTML page?
-
-  Home.panels.add(PANEL_CONFIG);
-  getAndSaveFeed();
-
-  // TODO: Get feeds from page.
-  /*
-  menuID = window.NativeWindow.menu.add({
-    name: 'Replace doc w/ feed contents',
-    icon: null,
-    callback: function () { replaceDocWithFeed(window); }
-  });
-  */
+  window.BrowserApp.deck.addEventListener("pageshow", pageShow, false);
 }
 
 function unloadFromWindow(window) {
-  if (!window) { return; }
-
-  Home.panels.remove(PANEL_ID);
-
-  window.NativeWindow.menu.remove(menuID);
-  menuID = null;
+  window.BrowserApp.deck.removeEventListener("pageshow", pageShow);
 }
 
 function install(aData, aReason) {}
 
 function uninstall(aData, aReason) {
-  let storage = HomeProvider.getStorage(DATASET_ID);
-  Task.spawn(function() {
-    yield storage.deleteAll(); // YOLO!
-  }).then(null, reportErrors);
+  // Uninstall and unregister all panels.
+  try {
+    let panelIds = JSON.parse(Services.prefs.getCharPref(PANEL_IDS_PREF));
+    panelIds.forEach(function(panelId) {
+      Home.panels.uninstall(panelId);
+      Home.panels.unregister(panelId);
+    });
+  } catch (e) {
+    // Nothing to clean up.
+  }
+
+  // Delete all data.
+  try {
+    let datasetIds = JSON.parse(Services.prefs.getCharPref(DATASET_IDS_PREF));
+    datasetIds.forEach(function(datasetId) {
+      Task.spawn(function() {
+        let storage = HomeProvider.getStorage(datasetId);
+        yield storage.deleteAll();
+      }).then(null, reportErrors);
+    });
+  } catch (e) {
+    // Nothing to clean up.
+  }
 }
 
 // via https://developer.mozilla.org/en-US/Add-ons/Firefox_for_Android/Initialization_and_Cleanup:

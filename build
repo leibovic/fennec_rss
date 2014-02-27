@@ -3,7 +3,7 @@
 XPI=rss.xpi
 
 # Replace this value to push to different release channels.
-ANDROID_APP_ID=org.mozilla.fennec_$USER
+ANDROID_APP_ID=org.mozilla.fennec
 
 zip $XPI bootstrap.js \
          install.rdf \

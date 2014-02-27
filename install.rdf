@@ -1,20 +1,20 @@
 <?xml version="1.0"?>
 <RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:em="http://www.mozilla.org/2004/em-rdf#">
     <Description about="urn:mozilla:install-manifest">
-        <em:id>rss@mcomella.me</em:id>
+        <em:id>rss@margaretleibovic.com</em:id>
         <em:type>2</em:type>
-        <em:name>(Tentative) RSS Home Page List</em:name>
+        <em:name>RSS Home Panels</em:name>
         <em:version>0.1</em:version>
         <em:bootstrap>true</em:bootstrap>
-        <em:description>Building for testing new home lists</em:description>
-        <em:creator>Michael Comella (:mcomella)</em:creator>
+        <em:description>Add RSS feeds to your home page.</em:description>
+        <em:creator>Margaret Leibovic and Michael Comella</em:creator>
 
         <!-- Mobile Native -->
         <em:targetApplication>
             <Description>
                 <em:id>{aa3c5121-dab2-40e2-81ca-7ea25febc110}</em:id>
-                <em:minVersion>15.0</em:minVersion>
-                <em:maxVersion>18.*</em:maxVersion>
+                <em:minVersion>30.0a1</em:minVersion>
+                <em:maxVersion>30.*</em:maxVersion>
             </Description>
         </em:targetApplication>
     </Description>
