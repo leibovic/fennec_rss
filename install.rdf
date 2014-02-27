@@ -3,7 +3,7 @@
     <Description about="urn:mozilla:install-manifest">
         <em:id>rss@margaretleibovic.com</em:id>
         <em:type>2</em:type>
-        <em:name>RSS Home Panels</em:name>
+        <em:name>RSS Panels</em:name>
         <em:version>0.1</em:version>
         <em:bootstrap>true</em:bootstrap>
         <em:description>Add RSS feeds to your home page.</em:description>
