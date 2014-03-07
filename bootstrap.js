@@ -21,10 +21,6 @@ function reportErrors(e) {
   e.errors.forEach(error => Cu.reportError(error.message));
 }
 
-function openPanel(panelId) {
-  Services.wm.getMostRecentWindow("navigator:browser").BrowserApp.loadURI("about:home?page=" + panelId);
-}
-
 function getAndSaveFeed(feedUrl, datasetId, callback) {
   parseFeed(feedUrl, function (feed) {
     Task.spawn(function() {
@@ -139,7 +135,8 @@ function loadFeed(feed, browser) {
 
   // JSON for Prompt
   let p = new Prompt({
-    window: chromeWin
+    window: chromeWin,
+    title: "Subscribe to page with"
   }).setSingleChoiceItems(handlers.map(function(handler) {
     return { label: handler.name };
   })).show(function(data) {
@@ -178,14 +175,15 @@ function addFeedPanel(feed) {
   Home.panels.install(panelId);
 
   // Immediately fetch items on install.
-  getAndSaveFeed(feed.href, datasetId, function() {
-    openPanel(panelId);
-  });
+  getAndSaveFeed(feed.href, datasetId);
 
   // Add periodic sync to update feed once per hour.
   HomeProvider.addPeriodicSync(datasetId, 3600, function() {
     getAndSaveFeed(feed.href, datasetId);
   });
+
+  let chromeWin = Services.wm.getMostRecentWindow("navigator:browser");
+  chromeWin.NativeWindow.toast.show("Added to Firefox homepage", "short");
 }
 
 let pageActionId = null;
