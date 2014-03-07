@@ -109,7 +109,49 @@ function storeId(id, pref) {
   Services.prefs.setCharPref(pref, JSON.stringify(ids));
 }
 
-function addFeed(feed) {
+// Monkey-patched version of FeedHandler.loadFeed
+function loadFeed(feed, browser) {
+  let chromeWin = Services.wm.getMostRecentWindow("navigator:browser");
+  let BrowserApp = chromeWin.BrowserApp;
+
+  // Get the default feed handlers from FeedHander
+  let handlers = chromeWin.FeedHandler.getContentHandlers(this.TYPE_MAYBE_FEED);
+
+  handlers = handlers.map(function(handler) {
+    return {
+      name: handler.name,
+      action: function defaultHandlerAction(feed) {
+        // Merge the handler URL and the feed URL
+        let readerURL = handler.uri;
+        readerURL = readerURL.replace(/%s/gi, encodeURIComponent(feed.href));
+
+        // Open the resultant URL in a new tab
+        BrowserApp.addTab(readerURL, { parentId: BrowserApp.selectedTab.id });
+      }
+    }
+  });
+
+  // Add our own custom handler.
+  handlers.push({
+    name: "Firefox homepage",
+    action: addFeedPanel
+  });
+
+  // JSON for Prompt
+  let p = new Prompt({
+    window: chromeWin
+  }).setSingleChoiceItems(handlers.map(function(handler) {
+    return { label: handler.name };
+  })).show(function(data) {
+    if (data.button == -1) {
+      return;
+    }
+    // Call the action callback for the feed handler.
+    handlers[data.button].action(feed);
+  });
+}
+
+function addFeedPanel(feed) {
   let uuidgen = Cc["@mozilla.org/uuid-generator;1"].getService(Ci.nsIUUIDGenerator);
   let panelId = uuidgen.generateUUID().toString();
   let datasetId = uuidgen.generateUUID().toString();
@@ -146,20 +188,6 @@ function addFeed(feed) {
   });
 }
 
-// Show the user a promt to choose a feed to subscribe to.
-function chooseFeed(window, feeds) {
-  let p = new Prompt({
-    window: window
-  }).setSingleChoiceItems(feeds.map(function(feed) {
-    return { label: feed.title || feed.href }
-  })).show(function(data) {
-    let feedIndex = data.button;
-    if (feedIndex > -1) {
-      addFeed(feeds[feedIndex]);
-    }
-  });
-}
-
 let pageActionId = null;
 
 function pageShow(event) {
@@ -188,21 +216,27 @@ function pageShow(event) {
     icon: RSS_ICON,
     title: "Add RSS feed to home page",
     clickCallback: function() {
-      if (feeds.length == 1) {
-        addFeed(feeds[0]);
-      } else {
-        chooseFeed(selectedTab.browser.contentWindow, feeds);
-      }
+      // Follow the regular "Subsribe" menu button action
+      let args = JSON.stringify({ tabId: selectedTab.id });
+      Services.obs.notifyObservers(null, "Feeds:Subscribe", args);
     }
   });
 }
 
+var originalLoadFeed;
+
 function loadIntoWindow(window) {
   window.BrowserApp.deck.addEventListener("pageshow", pageShow, false);
+
+  // Monkey-patch FeedHandler to add option to subscribe menu
+  originalLoadFeed = window.FeedHandler.loadFeed;
+  window.FeedHandler.loadFeed = loadFeed;
 }
 
 function unloadFromWindow(window) {
   window.BrowserApp.deck.removeEventListener("pageshow", pageShow);
+
+  window.FeedHandler.loadFeed = originalLoadFeed;
 }
 
 function install(aData, aReason) {}
