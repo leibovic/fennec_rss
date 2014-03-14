@@ -5,11 +5,18 @@ Cu.import("resource://gre/modules/HomeProvider.jsm");
 Cu.import("resource://gre/modules/Prompt.jsm");
 Cu.import('resource://gre/modules/Services.jsm');
 Cu.import("resource://gre/modules/Task.jsm");
+Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 const RSS_ICON = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABx0RVh0U29mdHdhcmUAQWRvYmUgRmlyZXdvcmtzIENTNui8sowAAAAWdEVYdENyZWF0aW9uIFRpbWUAMDEvMjEvMTP6xLgqAAACR0lEQVRYhcWXvZGbQBiGH2TnVqzEuALLwwbOTq7g6OB0HeAOzh3gCsx1IGUOUf4GugqMOtBVIAcsY/SxEkinwe+MZlj4WD37/S0bHQ4HnHP3QA7EjKMKyCStoyRJ7oHVSH9slb6bzWa/gel/Avg64djte6AEtiMBxO/Nja2kb83AOfcBmAMLIPXXN5UFOJKkV2Djfz+ccx89SMaNEnZyibGknaSfkj4BS+psHg/AwDx7kCfq3LlKUZIkh9Z4z78ELP24lPRybhLn3Geg4IocsQCnVHmg/BSMT9icOjQ3B2irBJ4kbU6A/LoE4hqARrkHeX0LhE3CLXXNL6hLreB0gmXA1sf/SJIe/bu9sh4o242okd+sMg9mtQdSGxKfEyU9iTmoDCWtPdiCbpueAqX1hA/Nsm/uSxvRRtIXwu4NQbxQ94nBAFPn3J1z7q4H5JHu6qZA4V3fVs6ZjtlXBStgJek59NA590DXG7mk7wPsBgE0qqgTrdOETpRcLGln7P4Q2MCG5kBMXXIP9oEPR2Vu54E5itDEl25GRQiCrgdSv3XfHKCBsNm+oa75tjJjsyPwpRUC2ANLSZGkiHp1thsWgfes29OAjYUMAqTtrPfXmbGZ21BIWhvQOBCGXoAqtMudKMMhK7RtuOoDOCcbhhCAjfERQKiMLUAc6oL+XufsELAt7XwByLMAAKv2xP762pNTCKBsD851wi31qkOTtG3aoZly7Pb2N2ajOS1vRkmSBFvkSKomdEtsTGUTX78pNzhkXKCKut+s/wLJlvCmkQE1rgAAAABJRU5ErkJggg==";
 
 const PANEL_IDS_PREF = "home.rss.panelIds";
 const DATASET_IDS_PREF = "home.rss.datasetIds";
+
+XPCOMUtils.defineLazyGetter(this, "RSS", function() {
+  let sandbox = {};
+  Services.scriptloader.loadSubScript("chrome://rss/content/rss.js", sandbox);
+  return sandbox["RSS"];
+});
 
 function reportErrors(e) {
   if (!e.errors) {
@@ -22,75 +29,13 @@ function reportErrors(e) {
 }
 
 function getAndSaveFeed(feedUrl, datasetId, callback) {
-  parseFeed(feedUrl, function (feed) {
+  RSS.parseFeed(feedUrl, function (feed) {
     Task.spawn(function() {
       let storage = HomeProvider.getStorage(datasetId);
       yield storage.deleteAll();
-      yield storage.save(feedToItems(feed));
+      yield storage.save(RSS.feedToItems(feed));
     }).then(callback, reportErrors);
   });
-}
-
-function feedToItems(feed) {
-  // TODO: Can use map?
-  let items = [];
-  for (let i = 0; i < feed.items.length; i++) {
-    let entry = feed.items.queryElementAt(i, Ci.nsIFeedEntry);
-    entry.QueryInterface(Ci.nsIFeedContainer);
-    entry.link.QueryInterface(Ci.nsIURI); // TODO: necessary?
-
-    items.push({
-      url: entry.link.spec,
-      title: entry.title.plainText(),
-      description: entry.summary.plainText()
-    });
-
-    // Get the image URL.
-    if (entry.enclosures && entry.enclosures.length > 0) {
-      for (let j = 0; j < entry.enclosures.length; j++) {
-        let enc = entry.enclosures.queryElementAt(j, Ci.nsIWritablePropertyBag2);
-
-        // Ignore ambiguous enclosures.
-        if (!(enc.hasKey('url') && enc.hasKey('type'))) {
-          continue;
-        }
-
-        if (enc.get('type').startsWith('image/')) {
-          items[i].image_url = enc.get('url');
-          // I'm fine with the first one.
-          break;
-        }
-      }
-    }
-  }
-  return items;
-}
-
-function parseFeed(feedUrl, onFinish) {
-  let listener = {
-    handleResult: function handleResult(feedResult) {
-      let feedDoc = feedResult.doc;
-      let feed = feedDoc.QueryInterface(Ci.nsIFeed);
-      if (feed.items.length == 0) {
-        return;
-      }
-      onFinish(feed);
-    }
-  };
-
-  let xhr = Cc['@mozilla.org/xmlextras/xmlhttprequest;1'].createInstance(Ci.nsIXMLHttpRequest);
-  xhr.open('GET', feedUrl, true);
-  xhr.overrideMimeType('text/xml');
-
-  xhr.addEventListener('load', (function () {
-    if (xhr.status == 200) {
-      let processor = Cc['@mozilla.org/feed-processor;1'].createInstance(Ci.nsIFeedProcessor);
-      processor.listener = listener;
-      let uri = Services.io.newURI(feedUrl, null, null);
-      processor.parseFromString(xhr.responseText, uri);
-    }
-  }), false);
-  xhr.send(null);
 }
 
 // Adds id to an array of ids stored in a pref.
