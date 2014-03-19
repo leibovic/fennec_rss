@@ -128,6 +128,9 @@ function addFeedPanel(feed) {
     Home.panels.register(panelId, optionsCallback);
     Home.panels.install(panelId);
 
+    let chromeWin = Services.wm.getMostRecentWindow("navigator:browser");
+    chromeWin.NativeWindow.toast.show("Added to Firefox homepage", "short");
+
     saveFeedItems(parsedFeed, datasetId);
   });
 
@@ -138,9 +141,6 @@ function addFeedPanel(feed) {
       saveFeedItems(parsedFeed, datasetId);
     });
   });
-
-  let chromeWin = Services.wm.getMostRecentWindow("navigator:browser");
-  chromeWin.NativeWindow.toast.show("Added to Firefox homepage", "short");
 }
 
 let pageActionId = null;
