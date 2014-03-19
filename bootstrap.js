@@ -267,6 +267,8 @@ function startup(aData, aReason) {
   try {
     let panelIds = JSON.parse(Services.prefs.getCharPref(PANEL_IDS_PREF));
     panelIds.forEach(function(panelId) {
+      // XXX: We need to pass an optionsCallback as well, which means we probably
+      // need to keep track of the feed (or just the title) and datasetId with the panelId.
       Home.panels.register(panelId);
     });
   } catch (e) {}
