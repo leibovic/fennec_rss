@@ -46,10 +46,10 @@ TEST_FEEDS.forEach(function(url) {
     h1.textContent = feed.title.plainText();
 
     // Only return the first 3 items
-    let item = RSS.feedToItems(feed).slice(0, 3);
+    let items = RSS.feedToItems(feed).slice(0, 3);
 
     let div = document.createElement("div");
-    div.textContent = JSON.stringify(item);
+    div.textContent = JSON.stringify(items);
 
     document.body.appendChild(h1);
     document.body.appendChild(div);
