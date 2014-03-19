@@ -30,14 +30,17 @@ function reportErrors(e) {
   e.errors.forEach(error => Cu.reportError(error.message));
 }
 
-function getAndSaveFeed(feedUrl, datasetId, callback) {
-  RSS.parseFeed(feedUrl, function (feed) {
-    Task.spawn(function() {
-      let storage = HomeProvider.getStorage(datasetId);
-      yield storage.deleteAll();
-      yield storage.save(RSS.feedToItems(feed));
-    }).then(callback, reportErrors);
-  });
+/**
+ * @param parsedFeed nsIFeed
+ */
+function saveFeedItems(parsedFeed, datasetId) {
+  let items = RSS.feedToItems(parsedFeed);
+
+  Task.spawn(function() {
+    let storage = HomeProvider.getStorage(datasetId);
+    yield storage.deleteAll();
+    yield storage.save(items);
+  }).then(null, reportErrors);
 }
 
 // Adds id to an array of ids stored in a pref.
@@ -107,26 +110,32 @@ function addFeedPanel(feed) {
   // Store the feed URL so that we can update the feed in the future.
   Services.prefs.setCharPref(datasetId, feed.href);
 
-  function optionsCallback() {
-    return {
-      title: feed.title || feed.href,
-      layout: Home.panels.Layout.FRAME,
-      views: [{
-        type: Home.panels.View.LIST,
-        dataset: datasetId
-      }]
-    };
-  }
+  // Immediately fetch and parse the feed to get title for panel
+  RSS.parseFeed(feed.href, function(parsedFeed) {
 
-  Home.panels.register(panelId, optionsCallback);
-  Home.panels.install(panelId);
+    function optionsCallback() {
+      return {
+        title: parsedFeed.title.plainText(),
+        layout: Home.panels.Layout.FRAME,
+        views: [{
+          type: Home.panels.View.LIST,
+          dataset: datasetId
+        }]
+      };
+    }
 
-  // Immediately fetch items on install.
-  getAndSaveFeed(feed.href, datasetId);
+    Home.panels.register(panelId, optionsCallback);
+    Home.panels.install(panelId);
+
+    saveFeedItems(parsedFeed, datasetId);
+  });
+
 
   // Add periodic sync to update feed once per hour.
   HomeProvider.addPeriodicSync(datasetId, 3600, function() {
-    getAndSaveFeed(feed.href, datasetId);
+    RSS.parseFeed(feed.href, function(parsedFeed) {
+      saveFeedItems(parsedFeed, datasetId);
+    });
   });
 
   let chromeWin = Services.wm.getMostRecentWindow("navigator:browser");
@@ -267,7 +276,10 @@ function startup(aData, aReason) {
     datasetIds.forEach(function(datasetId) {
       HomeProvider.addPeriodicSync(datasetId, 3600, function() {
         let feedUrl = Services.prefs.getCharPref(datasetId);
-        getAndSaveFeed(feedUrl, datasetId);
+
+        RSS.parseFeed(feedUrl, function(parsedFeed) {
+          saveFeedItems(parsedFeed, datasetId);
+        });
       });
     });
   } catch (e) {}

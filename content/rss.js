@@ -2,67 +2,89 @@
 
 const { classes: Cc, interfaces: Ci, utils: Cu } = Components;
 
-Cu.import('resource://gre/modules/Services.jsm');
+Cu.import("resource://gre/modules/Services.jsm");
 
 var RSS = {
-  parseFeed: function(feedUrl, onFinish) {
+  parseFeed: function(feedUrl, onFinish, onError) {
     let listener = {
       handleResult: function handleResult(feedResult) {
         let feedDoc = feedResult.doc;
-        let feed = feedDoc.QueryInterface(Ci.nsIFeed);
-        if (feed.items.length == 0) {
-          return;
-        }
-        onFinish(feed);
+        let parsedFeed = feedDoc.QueryInterface(Ci.nsIFeed);
+        onFinish(parsedFeed);
       }
     };
 
-    let xhr = Cc['@mozilla.org/xmlextras/xmlhttprequest;1'].createInstance(Ci.nsIXMLHttpRequest);
-    xhr.open('GET', feedUrl, true);
-    xhr.overrideMimeType('text/xml');
-
-    xhr.addEventListener('load', (function () {
-      if (xhr.status == 200) {
-        let processor = Cc['@mozilla.org/feed-processor;1'].createInstance(Ci.nsIFeedProcessor);
-        processor.listener = listener;
-        let uri = Services.io.newURI(feedUrl, null, null);
-        processor.parseFromString(xhr.responseText, uri);
+    let xhr = Cc["@mozilla.org/xmlextras/xmlhttprequest;1"].createInstance(Ci.nsIXMLHttpRequest);
+    try {
+      xhr.open("GET", feedUrl, true);
+    } catch (e) {
+      Cu.reportError("Error opening request to " + feedUrl + ": " + e);
+      if (onError) {
+        onError();
       }
-    }), false);
+      return;
+    }
+    xhr.overrideMimeType("text/xml");
+
+    xhr.onerror = function onerror(e) {
+      Cu.reportError("Error making request to " + feedUrl + ": " + e.error);
+      if (onError) {
+        onError();
+      }
+    };
+
+    xhr.onload = function onload(event) {
+      if (xhr.status !== 200) {
+        Cu.reportError("Request to " + feedUrl + " returned status " + xhr.status);
+        if (onError) {
+          onError();
+        }
+        return;
+      }
+
+      let processor = Cc["@mozilla.org/feed-processor;1"].createInstance(Ci.nsIFeedProcessor);
+      processor.listener = listener;
+
+      let uri = Services.io.newURI(feedUrl, null, null);
+      processor.parseFromString(xhr.responseText, uri);
+    };
+
     xhr.send(null);
   },
 
-  feedToItems: function (feed) {
-    // TODO: Can use map?
+  feedToItems: function(parsedFeed) {
     let items = [];
-    for (let i = 0; i < feed.items.length; i++) {
-      let entry = feed.items.queryElementAt(i, Ci.nsIFeedEntry);
+
+    for (let i = 0; i < parsedFeed.items.length; i++) {
+      let entry = parsedFeed.items.queryElementAt(i, Ci.nsIFeedEntry);
       entry.QueryInterface(Ci.nsIFeedContainer);
-      entry.link.QueryInterface(Ci.nsIURI); // TODO: necessary?
+      entry.link.QueryInterface(Ci.nsIURI);
 
-      items.push({
+      let item = {
         url: entry.link.spec,
-        title: entry.title.plainText(),
-        description: entry.summary.plainText()
-      });
+        title: entry.title.plainText()
+      };
 
-      // Get the image URL.
-      if (entry.enclosures && entry.enclosures.length > 0) {
+      if (entry.summary) {
+        item.description = entry.summary.plainText();
+      } else if (entry.content) {
+        item.description = entry.content.plainText();
+      } else {
+        Cu.reportError("No description found for " + entry.link.spec);
+      }
+
+      // Look for an image in the entry
+      if (entry.enclosures) {
         for (let j = 0; j < entry.enclosures.length; j++) {
           let enc = entry.enclosures.queryElementAt(j, Ci.nsIWritablePropertyBag2);
-
-          // Ignore ambiguous enclosures.
-          if (!(enc.hasKey('url') && enc.hasKey('type'))) {
-            continue;
-          }
-
-          if (enc.get('type').startsWith('image/')) {
-            items[i].image_url = enc.get('url');
-            // I'm fine with the first one.
+          if (enc.hasKey("url") && enc.hasKey("type") && enc.get("type").startsWith("image/")) {
+            item.image_url = enc.get("url");
             break;
           }
         }
       }
+
+      items.push(item);
     }
     return items;
   }
