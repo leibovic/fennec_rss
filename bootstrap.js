@@ -15,6 +15,10 @@ const RSS_ICON = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABz
 const PANEL_IDS_PREF = "home.rss.panelIds";
 const DATASET_IDS_PREF = "home.rss.datasetIds";
 
+XPCOMUtils.defineLazyGetter(this, "Strings", function() {
+  return Services.strings.createBundle("chrome://rss/locale/rss.properties");
+});
+
 XPCOMUtils.defineLazyGetter(this, "RSS", function() {
   let sandbox = {};
   Services.scriptloader.loadSubScript("chrome://rss/content/rss.js", sandbox);
@@ -80,14 +84,14 @@ function loadFeed(feed, browser) {
 
   // Add our own custom handler.
   handlers.push({
-    name: "Firefox homepage",
+    name: Strings.GetStringFromName("subscribePrompt.firefoxHomepage"),
     action: addFeedPanel
   });
 
   // JSON for Prompt
   let p = new Prompt({
     window: chromeWin,
-    title: "Subscribe to page with"
+    title: Strings.GetStringFromName("subscribePrompt.title")
   }).setSingleChoiceItems(handlers.map(function(handler) {
     return { label: handler.name };
   })).show(function(data) {
@@ -129,7 +133,7 @@ function addFeedPanel(feed) {
     Home.panels.install(panelId);
 
     let chromeWin = Services.wm.getMostRecentWindow("navigator:browser");
-    chromeWin.NativeWindow.toast.show("Added to Firefox homepage", "short");
+    chromeWin.NativeWindow.toast.show(Strings.GetStringFromName("toast.addedToFirefoxHomepage"), "short");
 
     saveFeedItems(parsedFeed, datasetId);
   });
@@ -145,7 +149,7 @@ function addFeedPanel(feed) {
 
 let pageActionId = null;
 
-function pageShow(event) {
+function onPageShow(event) {
   let chromeWin = Services.wm.getMostRecentWindow("navigator:browser");
   let selectedTab = chromeWin.BrowserApp.selectedTab;
 
@@ -169,7 +173,7 @@ function pageShow(event) {
 
   pageActionId = chromeWin.NativeWindow.pageactions.add({
     icon: RSS_ICON,
-    title: "Add RSS feed to home page",
+    title: Strings.GetStringFromName("pageAction.title"),
     clickCallback: function() {
       // Follow the regular "Subsribe" menu button action
       let args = JSON.stringify({ tabId: selectedTab.id });
@@ -191,7 +195,7 @@ function loadIntoWindow(window) {
     });
   }
 
-  window.BrowserApp.deck.addEventListener("pageshow", pageShow, false);
+  window.BrowserApp.deck.addEventListener("pageshow", onPageShow, false);
 
   // Monkey-patch FeedHandler to add option to subscribe menu
   originalLoadFeed = window.FeedHandler.loadFeed;
@@ -203,8 +207,7 @@ function unloadFromWindow(window) {
     window.NativeWindow.menu.remove(testMenuId);
   }
 
-  window.BrowserApp.deck.removeEventListener("pageshow", pageShow);
-
+  window.BrowserApp.deck.removeEventListener("pageshow", onPageShow);
   window.FeedHandler.loadFeed = originalLoadFeed;
 }
 
@@ -238,10 +241,10 @@ function uninstall(aData, aReason) {
 // via https://developer.mozilla.org/en-US/Add-ons/Firefox_for_Android/Initialization_and_Cleanup:
 var windowListener = {
   onOpenWindow: function (aWindow) {
-    // Wait for the window to finish loading
+    // Wait for the UI to finish loading
     let domWindow = aWindow.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindowInternal || Ci.nsIDOMWindow);
-    domWindow.addEventListener('load', function onLoad() {
-      domWindow.removeEventListener('load', onLoad, false);
+    domWindow.addEventListener("UIReady", function onLoad() {
+      domWindow.removeEventListener("UIReady", onLoad, false);
       loadIntoWindow(domWindow);
     }, false);
   },
@@ -251,10 +254,10 @@ var windowListener = {
 };
 
 function startup(aData, aReason) {
-  let wm = Cc['@mozilla.org/appshell/window-mediator;1'].getService(Ci.nsIWindowMediator);
+  let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
 
   // Load into any existing windows
-  let windows = wm.getEnumerator('navigator:browser');
+  let windows = wm.getEnumerator("navigator:browser");
   while (windows.hasMoreElements()) {
     let domWindow = windows.getNext().QueryInterface(Ci.nsIDOMWindow);
     loadIntoWindow(domWindow);
@@ -291,16 +294,16 @@ function startup(aData, aReason) {
 function shutdown(aData, aReason) {
   // When the application is shutting down we normally don't have to clean
   // up any UI changes made
-  if (aReason == APP_SHUTDOWN)
+  if (aReason == APP_SHUTDOWN) {
     return;
-
-  let wm = Cc['@mozilla.org/appshell/window-mediator;1'].getService(Ci.nsIWindowMediator);
+  }
 
   // Stop listening for new windows
+  let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
   wm.removeListener(windowListener);
 
   // Unload from any existing windows
-  let windows = wm.getEnumerator('navigator:browser');
+  let windows = wm.getEnumerator("navigator:browser");
   while (windows.hasMoreElements()) {
     let domWindow = windows.getNext().QueryInterface(Ci.nsIDOMWindow);
     unloadFromWindow(domWindow);

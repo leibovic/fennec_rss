@@ -1,1 +1,3 @@
-content rss content/
+content    rss          content/
+locale     rss en-US    content/locale/en-US/
+locale     rss fr       content/locale/fr/
