@@ -3,7 +3,7 @@ const { classes: Cc, interfaces: Ci, utils: Cu } = Components;
 Cu.import("resource://gre/modules/Home.jsm");
 Cu.import("resource://gre/modules/HomeProvider.jsm");
 Cu.import("resource://gre/modules/Prompt.jsm");
-Cu.import('resource://gre/modules/Services.jsm');
+Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/Task.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
@@ -48,7 +48,9 @@ function saveFeedItems(parsedFeed, datasetId) {
   }).then(null, reportErrors);
 }
 
-// Adds id to an array of ids stored in a pref.
+/**
+ * Adds id to an array of ids stored in a pref.
+ */
 function storeId(id, pref) {
   let ids;
   try {
@@ -60,7 +62,9 @@ function storeId(id, pref) {
   Services.prefs.setCharPref(pref, JSON.stringify(ids));
 }
 
-// Monkey-patched version of FeedHandler.loadFeed
+/**
+ * Monkey-patched version of FeedHandler.loadFeed
+ */
 function loadFeed(feed, browser) {
   let chromeWin = Services.wm.getMostRecentWindow("navigator:browser");
   let BrowserApp = chromeWin.BrowserApp;
@@ -147,7 +151,9 @@ function addFeedPanel(feed) {
   });
 }
 
-let pageActionId = null;
+var gPageActionId;
+var gTestMenuId;
+var gOriginalLoadFeed;
 
 function onPageShow(event) {
   let chromeWin = Services.wm.getMostRecentWindow("navigator:browser");
@@ -159,9 +165,9 @@ function onPageShow(event) {
   }
 
   // Remove any current page action item.
-  if (pageActionId) {
-    chromeWin.NativeWindow.pageactions.remove(pageActionId);
-    pageActionId = null;
+  if (gPageActionId) {
+    chromeWin.NativeWindow.pageactions.remove(gPageActionId);
+    gPageActionId = null;
   }
 
   let feeds = selectedTab.browser.feeds;
@@ -171,7 +177,7 @@ function onPageShow(event) {
     return;
   }
 
-  pageActionId = chromeWin.NativeWindow.pageactions.add({
+  gPageActionId = chromeWin.NativeWindow.pageactions.add({
     icon: RSS_ICON,
     title: Strings.GetStringFromName("pageAction.title"),
     clickCallback: function() {
@@ -182,12 +188,9 @@ function onPageShow(event) {
   });
 }
 
-var testMenuId;
-var originalLoadFeed;
-
 function loadIntoWindow(window) {
   if (DEBUG) {
-    testMenuId = window.NativeWindow.menu.add({
+    gTestMenuId = window.NativeWindow.menu.add({
       name: "Run RSS test",
       callback: function() {
         window.BrowserApp.addTab("chrome://rss/content/test.html");
@@ -198,73 +201,48 @@ function loadIntoWindow(window) {
   window.BrowserApp.deck.addEventListener("pageshow", onPageShow, false);
 
   // Monkey-patch FeedHandler to add option to subscribe menu
-  originalLoadFeed = window.FeedHandler.loadFeed;
+  gOriginalLoadFeed = window.FeedHandler.loadFeed;
   window.FeedHandler.loadFeed = loadFeed;
 }
 
 function unloadFromWindow(window) {
-  if (DEBUG) {
-    window.NativeWindow.menu.remove(testMenuId);
+  if (gTestMenuId) {
+    window.NativeWindow.menu.remove(gTestMenuId);
   }
 
   window.BrowserApp.deck.removeEventListener("pageshow", onPageShow);
-  window.FeedHandler.loadFeed = originalLoadFeed;
+  window.FeedHandler.loadFeed = gOriginalLoadFeed;
 }
 
 function install(aData, aReason) {}
 
-function uninstall(aData, aReason) {
-  // Uninstall and unregister all panels.
-  try {
-    let panelIds = JSON.parse(Services.prefs.getCharPref(PANEL_IDS_PREF));
-    panelIds.forEach(function(panelId) {
-      Home.panels.uninstall(panelId);
-      Home.panels.unregister(panelId);
-    });
-  } catch (e) {}
+function uninstall(aData, aReason) {}
 
-  // Delete all data.
-  try {
-    let datasetIds = JSON.parse(Services.prefs.getCharPref(DATASET_IDS_PREF));
-    datasetIds.forEach(function(datasetId) {
-      Services.prefs.removePeriodicSync(datasetId);
-      Services.prefs.clearUserPref(datasetId);
+var gWindowListener = {
+  onOpenWindow: function(aWindow) {
+    // Stop listening after the window has been opened.
+    Services.wm.removeListener(gWindowListener);
 
-      Task.spawn(function() {
-        let storage = HomeProvider.getStorage(datasetId);
-        yield storage.deleteAll();
-      }).then(null, reportErrors);
-    });
-  } catch (e) {}
-}
-
-// via https://developer.mozilla.org/en-US/Add-ons/Firefox_for_Android/Initialization_and_Cleanup:
-var windowListener = {
-  onOpenWindow: function (aWindow) {
-    // Wait for the UI to finish loading
-    let domWindow = aWindow.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindowInternal || Ci.nsIDOMWindow);
-    domWindow.addEventListener("UIReady", function onLoad() {
-      domWindow.removeEventListener("UIReady", onLoad, false);
-      loadIntoWindow(domWindow);
+    // Wait for startup to finish before interacting with the UI.
+    let win = aWindow.QueryInterface(Ci.nsIInterfaceRequestor).getInterface(Ci.nsIDOMWindowInternal || Ci.nsIDOMWindow);
+    win.addEventListener("UIReady", function onLoad() {
+      win.removeEventListener("UIReady", onLoad, false);
+      loadIntoWindow(win);
     }, false);
   },
-
-  onCloseWindow: function (aWindow) {},
-  onWindowTitleChange: function (aWindow, aTitle) {}
+  onCloseWindow: function(aWindow) {},
+  onWindowTitleChange: function(aWindow, aTitle) {}
 };
 
 function startup(aData, aReason) {
-  let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
-
-  // Load into any existing windows
-  let windows = wm.getEnumerator("navigator:browser");
-  while (windows.hasMoreElements()) {
-    let domWindow = windows.getNext().QueryInterface(Ci.nsIDOMWindow);
-    loadIntoWindow(domWindow);
+  let win = Services.wm.getMostRecentWindow("navigator:browser");
+  if (win) {
+    // Load into the browser window if it already exists.
+    loadIntoWindow(win);
+  } else {
+    // Otherwise, listen for it to open.
+    Serivces.wm.addListener(gWindowListener);
   }
-
-  // Load into any new windows
-  wm.addListener(windowListener);
 
   // Register any existing panels.
   try {
@@ -282,7 +260,6 @@ function startup(aData, aReason) {
     datasetIds.forEach(function(datasetId) {
       HomeProvider.addPeriodicSync(datasetId, 3600, function() {
         let feedUrl = Services.prefs.getCharPref(datasetId);
-
         RSS.parseFeed(feedUrl, function(parsedFeed) {
           saveFeedItems(parsedFeed, datasetId);
         });
@@ -292,20 +269,37 @@ function startup(aData, aReason) {
 }
 
 function shutdown(aData, aReason) {
-  // When the application is shutting down we normally don't have to clean
-  // up any UI changes made
+  // When the application is shutting down we normally don't have to clean any changes made.
   if (aReason == APP_SHUTDOWN) {
     return;
   }
 
-  // Stop listening for new windows
-  let wm = Cc["@mozilla.org/appshell/window-mediator;1"].getService(Ci.nsIWindowMediator);
-  wm.removeListener(windowListener);
+  unloadFromWindow(Services.wm.getMostRecentWindow("navigator:browser"));
 
-  // Unload from any existing windows
-  let windows = wm.getEnumerator("navigator:browser");
-  while (windows.hasMoreElements()) {
-    let domWindow = windows.getNext().QueryInterface(Ci.nsIDOMWindow);
-    unloadFromWindow(domWindow);
+  // If the add-on is being uninstalled, also remove all panel data.
+  // XXX: Would we ever want to do this if the add-on was only being disabled?
+  if (aReason == ADDON_UNINSTALL) {
+    // Uninstall and unregister all panels.
+    try {
+      let panelIds = JSON.parse(Services.prefs.getCharPref(PANEL_IDS_PREF));
+      panelIds.forEach(function(panelId) {
+        Home.panels.uninstall(panelId);
+        Home.panels.unregister(panelId);
+      });
+    } catch (e) {}
+
+    // Delete all data.
+    try {
+      let datasetIds = JSON.parse(Services.prefs.getCharPref(DATASET_IDS_PREF));
+      datasetIds.forEach(function(datasetId) {
+        Services.prefs.removePeriodicSync(datasetId);
+        Services.prefs.clearUserPref(datasetId);
+
+        Task.spawn(function() {
+          let storage = HomeProvider.getStorage(datasetId);
+          yield storage.deleteAll();
+        }).then(null, reportErrors);
+      });
+    } catch (e) {}
   }
 }
