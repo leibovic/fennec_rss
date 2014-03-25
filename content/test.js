@@ -41,12 +41,12 @@ function appendRawFeed(feed) {
 }
 
 TEST_FEEDS.forEach(function(url) {
-  RSS.parseFeed(url, function(feed) {
+  FeedHelper.parseFeed(url, function(feed) {
     let h1 = document.createElement("h1");
     h1.textContent = feed.title.plainText();
 
     // Only return the first 3 items
-    let items = RSS.feedToItems(feed).slice(0, 3);
+    let items = FeedHelper.feedToItems(feed).slice(0, 3);
 
     let div = document.createElement("div");
     div.textContent = JSON.stringify(items);

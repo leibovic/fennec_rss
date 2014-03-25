@@ -4,7 +4,7 @@ const { classes: Cc, interfaces: Ci, utils: Cu } = Components;
 
 Cu.import("resource://gre/modules/Services.jsm");
 
-var RSS = {
+var FeedHelper = {
   parseFeed: function(feedUrl, onFinish, onError) {
     let listener = {
       handleResult: function handleResult(feedResult) {

@@ -19,10 +19,10 @@ XPCOMUtils.defineLazyGetter(this, "Strings", function() {
   return Services.strings.createBundle("chrome://rss/locale/rss.properties");
 });
 
-XPCOMUtils.defineLazyGetter(this, "RSS", function() {
+XPCOMUtils.defineLazyGetter(this, "FeedHelper", function() {
   let sandbox = {};
-  Services.scriptloader.loadSubScript("chrome://rss/content/rss.js", sandbox);
-  return sandbox["RSS"];
+  Services.scriptloader.loadSubScript("chrome://rss/content/FeedHelper.js", sandbox);
+  return sandbox["FeedHelper"];
 });
 
 function reportErrors(e) {
@@ -39,7 +39,7 @@ function reportErrors(e) {
  * @param parsedFeed nsIFeed
  */
 function saveFeedItems(parsedFeed, datasetId) {
-  let items = RSS.feedToItems(parsedFeed);
+  let items = FeedHelper.feedToItems(parsedFeed);
 
   Task.spawn(function() {
     let storage = HomeProvider.getStorage(datasetId);
@@ -120,7 +120,7 @@ function addFeedPanel(feed) {
   Services.prefs.setCharPref(datasetId, feed.href);
 
   // Immediately fetch and parse the feed to get title for panel
-  RSS.parseFeed(feed.href, function(parsedFeed) {
+  FeedHelper.parseFeed(feed.href, function(parsedFeed) {
 
     function optionsCallback() {
       return {
@@ -145,7 +145,7 @@ function addFeedPanel(feed) {
 
   // Add periodic sync to update feed once per hour.
   HomeProvider.addPeriodicSync(datasetId, 3600, function() {
-    RSS.parseFeed(feed.href, function(parsedFeed) {
+    FeedHelper.parseFeed(feed.href, function(parsedFeed) {
       saveFeedItems(parsedFeed, datasetId);
     });
   });
@@ -260,7 +260,7 @@ function startup(aData, aReason) {
     datasetIds.forEach(function(datasetId) {
       HomeProvider.addPeriodicSync(datasetId, 3600, function() {
         let feedUrl = Services.prefs.getCharPref(datasetId);
-        RSS.parseFeed(feedUrl, function(parsedFeed) {
+        FeedHelper.parseFeed(feedUrl, function(parsedFeed) {
           saveFeedItems(parsedFeed, datasetId);
         });
       });
