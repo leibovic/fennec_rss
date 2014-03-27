@@ -1,6 +1,6 @@
-RSS Panels Add-on for Firefox for Android
+Subscribe Add-on for Firefox for Android
 ============================================
 
-Add RSS feeds to your home page through a page actions icon.
+Allows you to subscribe to feeds on your home page.
 
-Install the add-on here: http://people.mozilla.org/~mleibovic/rss.xpi
+Install the add-on here: http://people.mozilla.org/~mleibovic/subscribe.xpi
