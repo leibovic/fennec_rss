@@ -9,8 +9,8 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 const PAGE_ACTION_ICON = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABx0RVh0U29mdHdhcmUAQWRvYmUgRmlyZXdvcmtzIENTNui8sowAAAAWdEVYdENyZWF0aW9uIFRpbWUAMDEvMjEvMTP6xLgqAAACR0lEQVRYhcWXvZGbQBiGH2TnVqzEuALLwwbOTq7g6OB0HeAOzh3gCsx1IGUOUf4GugqMOtBVIAcsY/SxEkinwe+MZlj4WD37/S0bHQ4HnHP3QA7EjKMKyCStoyRJ7oHVSH9slb6bzWa/gel/Avg64djte6AEtiMBxO/Nja2kb83AOfcBmAMLIPXXN5UFOJKkV2Djfz+ccx89SMaNEnZyibGknaSfkj4BS+psHg/AwDx7kCfq3LlKUZIkh9Z4z78ELP24lPRybhLn3Geg4IocsQCnVHmg/BSMT9icOjQ3B2irBJ4kbU6A/LoE4hqARrkHeX0LhE3CLXXNL6hLreB0gmXA1sf/SJIe/bu9sh4o242okd+sMg9mtQdSGxKfEyU9iTmoDCWtPdiCbpueAqX1hA/Nsm/uSxvRRtIXwu4NQbxQ94nBAFPn3J1z7q4H5JHu6qZA4V3fVs6ZjtlXBStgJek59NA590DXG7mk7wPsBgE0qqgTrdOETpRcLGln7P4Q2MCG5kBMXXIP9oEPR2Vu54E5itDEl25GRQiCrgdSv3XfHKCBsNm+oa75tjJjsyPwpRUC2ANLSZGkiHp1thsWgfes29OAjYUMAqTtrPfXmbGZ21BIWhvQOBCGXoAqtMudKMMhK7RtuOoDOCcbhhCAjfERQKiMLUAc6oL+XufsELAt7XwByLMAAKv2xP762pNTCKBsD851wi31qkOTtG3aoZly7Pb2N2ajOS1vRkmSBFvkSKomdEtsTGUTX78pNzhkXKCKut+s/wLJlvCmkQE1rgAAAABJRU5ErkJggg==";
 
-const PANELS_PREF = "home.subscribe.panels";
-const DATASET_IDS_PREF = "home.subscribe.datasetIds";
+// Pref used to persist feed panel data between app runs.
+const FEEDS_PREF = "home.subscribe.feeds";
 
 XPCOMUtils.defineLazyGetter(this, "Strings", function() {
   return Services.strings.createBundle("chrome://subscribe/locale/subscribe.properties");
@@ -33,36 +33,26 @@ function reportErrors(e) {
 }
 
 /**
- * @param parsedFeed nsIFeed
+ * @return optionsCallback function for a basic list panel
  */
-function saveFeedItems(parsedFeed, datasetId) {
-  let items = FeedHelper.feedToItems(parsedFeed);
-
-  Task.spawn(function() {
-    let storage = HomeProvider.getStorage(datasetId);
-    yield storage.deleteAll();
-    yield storage.save(items);
-  }).then(null, reportErrors);
-}
-
-/**
- * Adds id to an array of ids stored in a pref.
- */
-function storeId(id, pref) {
-  let ids;
-  try {
-    ids = JSON.parse(Services.prefs.getCharPref(pref));
-  } catch (e) {
-    ids = [];
-  }
-  ids.push(id);
-  Services.prefs.setCharPref(pref, JSON.stringify(ids));
+function getOptionsCallback(title, datasetId) {
+  return function() {
+    return {
+      title: title,
+      views: [{
+        type: Home.panels.View.LIST,
+        dataset: datasetId
+      }]
+    };
+  };
 }
 
 /**
  * Monkey-patched version of FeedHandler.loadFeed
+ *
+ * @param feed object created by DOMLinkAdded handler in browser.js
  */
-function loadFeed(feed, browser) {
+function loadFeed(feed) {
   let chromeWin = Services.wm.getMostRecentWindow("navigator:browser");
   let BrowserApp = chromeWin.BrowserApp;
 
@@ -104,40 +94,27 @@ function loadFeed(feed, browser) {
   });
 }
 
+/**
+ * @param feed object created by DOMLinkAdded handler in browser.js
+ */
 function addFeedPanel(feed) {
   let uuidgen = Cc["@mozilla.org/uuid-generator;1"].getService(Ci.nsIUUIDGenerator);
   let panelId = uuidgen.generateUUID().toString();
   let datasetId = uuidgen.generateUUID().toString();
 
-  // Store panelId and datasetId in prefs so that we can remove them in the future.
-  storeId(panelId, PANEL_IDS_PREF);
-  storeId(datasetId, DATASET_IDS_PREF);
-
-  // Store the feed URL so that we can update the feed in the future.
-  Services.prefs.setCharPref(datasetId, feed.href);
-
-  // Immediately fetch and parse the feed to get title for panel
+  // Immediately fetch and parse the feed to get title for panel.
   FeedHelper.parseFeed(feed.href, function(parsedFeed) {
+    let title = parsedFeed.title.plainText();
 
-    function optionsCallback() {
-      return {
-        title: parsedFeed.title.plainText(),
-        views: [{
-          type: Home.panels.View.LIST,
-          dataset: datasetId
-        }]
-      };
-    }
-
-    Home.panels.register(panelId, optionsCallback);
+    Home.panels.register(panelId, getOptionsCallback(title, datasetId));
     Home.panels.install(panelId);
+
+    saveFeedItems(parsedFeed, datasetId);
+    storeFeed(feed.href, title, panelId, datasetId);
 
     let chromeWin = Services.wm.getMostRecentWindow("navigator:browser");
     chromeWin.NativeWindow.toast.show(Strings.GetStringFromName("toast.addedToFirefoxHomepage"), "short");
-
-    saveFeedItems(parsedFeed, datasetId);
   });
-
 
   // Add periodic sync to update feed once per hour.
   HomeProvider.addPeriodicSync(datasetId, 3600, function() {
@@ -145,6 +122,40 @@ function addFeedPanel(feed) {
       saveFeedItems(parsedFeed, datasetId);
     });
   });
+}
+
+/**
+ * @param parsedFeed nsIFeed
+ */
+function saveFeedItems(parsedFeed, datasetId) {
+  let items = FeedHelper.feedToItems(parsedFeed);
+
+  Task.spawn(function() {
+    let storage = HomeProvider.getStorage(datasetId);
+    yield storage.deleteAll();
+    yield storage.save(items);
+  }).then(null, reportErrors);
+}
+
+/**
+ * Stores feed panel data that we need to persist between app runs.
+ */
+function storeFeed(url, title, panelId, datasetId) {
+  let feeds;
+  try {
+    feeds = JSON.parse(Services.prefs.getCharPref(FEEDS_PREF));
+  } catch (e) {
+    feeds = [];
+  }
+
+  feeds.push({
+    url: url,
+    title: title,
+    panelId: panelId,
+    datasetId: datasetId
+  });
+
+  Services.prefs.setCharPref(FEEDS_PREF, JSON.stringify(feeds));
 }
 
 var gPageActionId;
@@ -155,7 +166,8 @@ function onPageShow(event) {
   let selectedTab = chromeWin.BrowserApp.selectedTab;
 
   // Ignore load events on frames and other documents.
-  if (event.target != selectedTab.browser.contentDocument) {
+  // selectedTab may be null during startup.
+  if (!selectedTab || event.target != selectedTab.browser.contentDocument) {
     return;
   }
 
@@ -196,6 +208,9 @@ function unloadFromWindow(window) {
   window.FeedHandler.loadFeed = gOriginalLoadFeed;
 }
 
+/**
+ * bootstrap.js API
+ */
 function install(aData, aReason) {}
 
 function uninstall(aData, aReason) {}
@@ -223,27 +238,19 @@ function startup(aData, aReason) {
     loadIntoWindow(win);
   } else {
     // Otherwise, listen for it to open.
-    Serivces.wm.addListener(gWindowListener);
+    Services.wm.addListener(gWindowListener);
   }
 
-  // Register any existing panels.
   try {
-    let panelIds = JSON.parse(Services.prefs.getCharPref(PANEL_IDS_PREF));
-    panelIds.forEach(function(panelId) {
-      // XXX: We need to pass an optionsCallback as well, which means we probably
-      // need to keep track of the feed (or just the title) and datasetId with the panelId.
-      Home.panels.register(panelId);
-    });
-  } catch (e) {}
+    let feeds = JSON.parse(Services.prefs.getCharPref(FEEDS_PREF));
+    feeds.forEach(function(feed) {
+      // Register any existing panels.
+      Home.panels.register(feed.panelId, getOptionsCallback(feed.title, feed.datasetId));
 
-  // Add periodic sync for existing feeds.
-  try {
-    let datasetIds = JSON.parse(Services.prefs.getCharPref(DATASET_IDS_PREF));
-    datasetIds.forEach(function(datasetId) {
-      HomeProvider.addPeriodicSync(datasetId, 3600, function() {
-        let feedUrl = Services.prefs.getCharPref(datasetId);
-        FeedHelper.parseFeed(feedUrl, function(parsedFeed) {
-          saveFeedItems(parsedFeed, datasetId);
+      // Add periodic sync for existing feeds.
+      HomeProvider.addPeriodicSync(feed.datasetId, 3600, function() {
+        FeedHelper.parseFeed(feed.url, function(parsedFeed) {
+          saveFeedItems(parsedFeed, feed.datasetId);
         });
       });
     });
@@ -259,28 +266,23 @@ function shutdown(aData, aReason) {
   unloadFromWindow(Services.wm.getMostRecentWindow("navigator:browser"));
 
   // If the add-on is being uninstalled, also remove all panel data.
-  // XXX: Would we ever want to do this if the add-on was only being disabled?
   if (aReason == ADDON_UNINSTALL) {
-    // Uninstall and unregister all panels.
     try {
-      let panelIds = JSON.parse(Services.prefs.getCharPref(PANEL_IDS_PREF));
-      panelIds.forEach(function(panelId) {
-        Home.panels.uninstall(panelId);
-        Home.panels.unregister(panelId);
-      });
-    } catch (e) {}
+      let feeds = JSON.parse(Services.prefs.getCharPref(FEEDS_PREF));
+      feeds.forEach(function(feed) {
+        // Uninstall and unregister all panels.
+        Home.panels.uninstall(feed.panelId);
+        Home.panels.unregister(feed.panelId);
 
-    // Delete all data.
-    try {
-      let datasetIds = JSON.parse(Services.prefs.getCharPref(DATASET_IDS_PREF));
-      datasetIds.forEach(function(datasetId) {
-        Services.prefs.removePeriodicSync(datasetId);
-        Services.prefs.clearUserPref(datasetId);
-
+        // Delete all data.
+        HomeProvider.removePeriodicSync(feed.datasetId);
         Task.spawn(function() {
-          let storage = HomeProvider.getStorage(datasetId);
+          let storage = HomeProvider.getStorage(feed.datasetId);
           yield storage.deleteAll();
         }).then(null, reportErrors);
+
+        // Clear the stored feeds.
+        Services.prefs.clearUserPref(FEEDS_PREF);
       });
     } catch (e) {}
   }
