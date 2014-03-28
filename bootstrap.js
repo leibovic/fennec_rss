@@ -1,3 +1,7 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
 const { classes: Cc, interfaces: Ci, utils: Cu } = Components;
 
 Cu.import("resource://gre/modules/Home.jsm");
@@ -33,7 +37,7 @@ function reportErrors(e) {
 }
 
 /**
- * @return optionsCallback function for a basic list panel
+ * @return optionsCallback function for a basic list panel.
  */
 function getOptionsCallback(title, datasetId) {
   return function() {
@@ -48,7 +52,7 @@ function getOptionsCallback(title, datasetId) {
 }
 
 /**
- * Monkey-patched version of FeedHandler.loadFeed
+ * Monkey-patched version of FeedHandler.loadFeed.
  *
  * @param feed object created by DOMLinkAdded handler in browser.js
  */
@@ -56,18 +60,18 @@ function loadFeed(feed) {
   let chromeWin = Services.wm.getMostRecentWindow("navigator:browser");
   let BrowserApp = chromeWin.BrowserApp;
 
-  // Get the default feed handlers from FeedHander
+  // Get the default feed handlers from FeedHandler.
   let handlers = chromeWin.FeedHandler.getContentHandlers(this.TYPE_MAYBE_FEED);
 
   handlers = handlers.map(function(handler) {
     return {
       name: handler.name,
       action: function defaultHandlerAction(feed) {
-        // Merge the handler URL and the feed URL
+        // Merge the handler URL and the feed URL.
         let readerURL = handler.uri;
         readerURL = readerURL.replace(/%s/gi, encodeURIComponent(feed.href));
 
-        // Open the resultant URL in a new tab
+        // Open the resultant URL in a new tab.
         BrowserApp.addTab(readerURL, { parentId: BrowserApp.selectedTab.id });
       }
     }
@@ -79,13 +83,13 @@ function loadFeed(feed) {
     action: addFeedPanel
   });
 
-  // JSON for Prompt
+  // JSON for Prompt.
   let p = new Prompt({
     window: chromeWin,
     title: Strings.GetStringFromName("prompt.subscribeToPage")
-  }).setSingleChoiceItems(handlers.map(function(handler) {
-    return { label: handler.name };
-  })).show(function(data) {
+  });
+  p.setSingleChoiceItems([handler.name for each (handler in handlers)]);
+  p.show(function (data) {
     if (data.button == -1) {
       return;
     }
@@ -103,7 +107,7 @@ function addFeedPanel(feed) {
   let datasetId = uuidgen.generateUUID().toString();
 
   // Immediately fetch and parse the feed to get title for panel.
-  FeedHelper.parseFeed(feed.href, function(parsedFeed) {
+  FeedHelper.parseFeed(feed.href, function (parsedFeed) {
     let title = parsedFeed.title.plainText();
 
     Home.panels.register(panelId, getOptionsCallback(title, datasetId));
@@ -117,7 +121,7 @@ function addFeedPanel(feed) {
   });
 
   // Add periodic sync to update feed once per hour.
-  HomeProvider.addPeriodicSync(datasetId, 3600, function() {
+  HomeProvider.addPeriodicSync(datasetId, 3600, function () {
     FeedHelper.parseFeed(feed.href, function(parsedFeed) {
       saveFeedItems(parsedFeed, datasetId);
     });
@@ -158,11 +162,15 @@ function storeFeed(url, title, panelId, datasetId) {
   Services.prefs.setCharPref(FEEDS_PREF, JSON.stringify(feeds));
 }
 
-var gPageActionId;
-var gOriginalLoadFeed;
+let gPageActionId;
+let gOriginalLoadFeed;
 
 function onPageShow(event) {
   let chromeWin = Services.wm.getMostRecentWindow("navigator:browser");
+  if (!chromeWin) {
+    return;
+  }
+
   let selectedTab = chromeWin.BrowserApp.selectedTab;
 
   // Ignore load events on frames and other documents.
@@ -187,8 +195,8 @@ function onPageShow(event) {
   gPageActionId = chromeWin.NativeWindow.pageactions.add({
     icon: PAGE_ACTION_ICON,
     title: Strings.GetStringFromName("pageAction.subscribeToPage"),
-    clickCallback: function() {
-      // Follow the regular "Subsribe" menu button action
+    clickCallback: function onSubscribeClicked() {
+      // Follow the regular "Subscribe" menu button action.
       let args = JSON.stringify({ tabId: selectedTab.id });
       Services.obs.notifyObservers(null, "Feeds:Subscribe", args);
     }
@@ -198,7 +206,7 @@ function onPageShow(event) {
 function loadIntoWindow(window) {
   window.BrowserApp.deck.addEventListener("pageshow", onPageShow, false);
 
-  // Monkey-patch FeedHandler to add option to subscribe menu
+  // Monkey-patch FeedHandler to add option to subscribe menu.
   gOriginalLoadFeed = window.FeedHandler.loadFeed;
   window.FeedHandler.loadFeed = loadFeed;
 }
@@ -215,7 +223,7 @@ function install(aData, aReason) {}
 
 function uninstall(aData, aReason) {}
 
-var gWindowListener = {
+let gWindowListener = {
   onOpenWindow: function(aWindow) {
     // Stop listening after the window has been opened.
     Services.wm.removeListener(gWindowListener);
@@ -269,7 +277,7 @@ function shutdown(aData, aReason) {
   if (aReason == ADDON_UNINSTALL) {
     try {
       let feeds = JSON.parse(Services.prefs.getCharPref(FEEDS_PREF));
-      feeds.forEach(function(feed) {
+      feeds.forEach(function (feed) {
         // Uninstall and unregister all panels.
         Home.panels.uninstall(feed.panelId);
         Home.panels.unregister(feed.panelId);
