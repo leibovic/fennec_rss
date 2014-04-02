@@ -2,7 +2,7 @@
 
 # Build config for the build script, build.sh. Look there for more info.
 
-APP_NAME=subscribe
+APP_NAME=homepagefeeds
 CHROME_PROVIDERS="content"
 CLEAN_UP=1
 ROOT_FILES="bootstrap.js"

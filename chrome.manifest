@@ -1,3 +1,3 @@
-content    subscribe          content/
-locale     subscribe en-US    content/locale/en-US/
-locale     subscribe fr       content/locale/fr/
+content    feeds          content/
+locale     feeds en-US    content/locale/en-US/
+locale     feeds fr       content/locale/fr/
