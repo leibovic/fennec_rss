@@ -88,7 +88,9 @@ function loadFeed(feed) {
     window: chromeWin,
     title: Strings.GetStringFromName("prompt.subscribeToPage")
   });
-  p.setSingleChoiceItems([handler.name for each (handler in handlers)]);
+  p.setSingleChoiceItems(handlers.map(function (handler) {
+    return { label: handler.name };
+  }));
   p.show(function (data) {
     if (data.button == -1) {
       return;
