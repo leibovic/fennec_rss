@@ -1,3 +1,4 @@
 content    feeds          content/
 locale     feeds en-US    content/locale/en-US/
 locale     feeds fr       content/locale/fr/
+skin       feeds          classic/1.0 skin/

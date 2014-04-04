@@ -11,8 +11,6 @@ Cu.import("resource://gre/modules/Services.jsm");
 Cu.import("resource://gre/modules/Task.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
-const PAGE_ACTION_ICON = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAYAAABzenr0AAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABx0RVh0U29mdHdhcmUAQWRvYmUgRmlyZXdvcmtzIENTNui8sowAAAAWdEVYdENyZWF0aW9uIFRpbWUAMDEvMjEvMTP6xLgqAAACR0lEQVRYhcWXvZGbQBiGH2TnVqzEuALLwwbOTq7g6OB0HeAOzh3gCsx1IGUOUf4GugqMOtBVIAcsY/SxEkinwe+MZlj4WD37/S0bHQ4HnHP3QA7EjKMKyCStoyRJ7oHVSH9slb6bzWa/gel/Avg64djte6AEtiMBxO/Nja2kb83AOfcBmAMLIPXXN5UFOJKkV2Djfz+ccx89SMaNEnZyibGknaSfkj4BS+psHg/AwDx7kCfq3LlKUZIkh9Z4z78ELP24lPRybhLn3Geg4IocsQCnVHmg/BSMT9icOjQ3B2irBJ4kbU6A/LoE4hqARrkHeX0LhE3CLXXNL6hLreB0gmXA1sf/SJIe/bu9sh4o242okd+sMg9mtQdSGxKfEyU9iTmoDCWtPdiCbpueAqX1hA/Nsm/uSxvRRtIXwu4NQbxQ94nBAFPn3J1z7q4H5JHu6qZA4V3fVs6ZjtlXBStgJek59NA590DXG7mk7wPsBgE0qqgTrdOETpRcLGln7P4Q2MCG5kBMXXIP9oEPR2Vu54E5itDEl25GRQiCrgdSv3XfHKCBsNm+oa75tjJjsyPwpRUC2ANLSZGkiHp1thsWgfes29OAjYUMAqTtrPfXmbGZ21BIWhvQOBCGXoAqtMudKMMhK7RtuOoDOCcbhhCAjfERQKiMLUAc6oL+XufsELAt7XwByLMAAKv2xP762pNTCKBsD851wi31qkOTtG3aoZly7Pb2N2ajOS1vRkmSBFvkSKomdEtsTGUTX78pNzhkXKCKut+s/wLJlvCmkQE1rgAAAABJRU5ErkJggg==";
-
 // Pref used to persist feed panel data between app runs.
 const FEEDS_PREF = "home.page.feeds";
 
@@ -39,14 +37,20 @@ function reportErrors(e) {
 /**
  * @return optionsCallback function for a basic list panel.
  */
-function getOptionsCallback(title, datasetId) {
+function getOptionsCallback(panelId, title, datasetId) {
   return function() {
     return {
       title: title,
       views: [{
         type: Home.panels.View.LIST,
         dataset: datasetId
-      }]
+      }],
+      onuninstall: function() {
+        // Unregister the panel and delete its data if the user
+        // chooses to remove it in settings.
+        removeFeedPanel(panelId, datasetId);
+        unstoreFeed(panelId);
+      }
     };
   };
 }
@@ -112,7 +116,7 @@ function addFeedPanel(feed) {
   FeedHelper.parseFeed(feed.href, function (parsedFeed) {
     let title = parsedFeed.title.plainText();
 
-    Home.panels.register(panelId, getOptionsCallback(title, datasetId));
+    Home.panels.register(panelId, getOptionsCallback(panelId, title, datasetId));
     Home.panels.install(panelId);
 
     saveFeedItems(parsedFeed, datasetId);
@@ -131,12 +135,26 @@ function addFeedPanel(feed) {
 }
 
 /**
+ * Uninstalls and unregisters panel, and deletes all feed data.
+ */
+function removeFeedPanel(panelId, datasetId) {
+  Home.panels.uninstall(panelId);
+  Home.panels.unregister(panelId);
+
+  HomeProvider.removePeriodicSync(datasetId);
+  Task.spawn(function deleteAll() {
+    let storage = HomeProvider.getStorage(datasetId);
+    yield storage.deleteAll();
+  }).then(null, reportErrors);
+}
+
+/**
  * @param parsedFeed nsIFeed
  */
 function saveFeedItems(parsedFeed, datasetId) {
   let items = FeedHelper.feedToItems(parsedFeed);
 
-  Task.spawn(function() {
+  Task.spawn(function () {
     let storage = HomeProvider.getStorage(datasetId);
     yield storage.deleteAll();
     yield storage.save(items);
@@ -163,6 +181,26 @@ function storeFeed(url, title, panelId, datasetId) {
 
   Services.prefs.setCharPref(FEEDS_PREF, JSON.stringify(feeds));
 }
+
+/**
+ * Removes feed from array that persists between app runs.
+ */
+function unstoreFeed(panelId) {
+  try {
+    let feeds = JSON.parse(Services.prefs.getCharPref(FEEDS_PREF));
+    for (let i = 0; i < feeds.length; i++) {
+      if (feeds[i].panelId === panelId) {
+        feeds.splice(i, 0);
+        break;
+      }
+    }
+    Services.prefs.setCharPref(FEEDS_PREF, JSON.stringify(feeds));
+  } catch (e) {
+    // We should never call unstoreFeed if the FEEDS_PREF doesn't exist.
+    Cu.reportError(e);
+  }
+}
+
 
 let gPageActionId;
 let gOriginalLoadFeed;
@@ -195,7 +233,7 @@ function onPageShow(event) {
   }
 
   gPageActionId = chromeWin.NativeWindow.pageactions.add({
-    icon: PAGE_ACTION_ICON,
+    icon: "chrome://feeds/skin/icon_page_action.png",
     title: Strings.GetStringFromName("pageAction.subscribeToPage"),
     clickCallback: function onSubscribeClicked() {
       // Follow the regular "Subscribe" menu button action.
@@ -255,7 +293,7 @@ function startup(aData, aReason) {
     let feeds = JSON.parse(Services.prefs.getCharPref(FEEDS_PREF));
     feeds.forEach(function(feed) {
       // Register any existing panels.
-      Home.panels.register(feed.panelId, getOptionsCallback(feed.title, feed.datasetId));
+      Home.panels.register(feed.panelId, getOptionsCallback(feed.panelId, feed.title, feed.datasetId));
 
       // Add periodic sync for existing feeds.
       HomeProvider.addPeriodicSync(feed.datasetId, 3600, function() {
@@ -280,20 +318,11 @@ function shutdown(aData, aReason) {
     try {
       let feeds = JSON.parse(Services.prefs.getCharPref(FEEDS_PREF));
       feeds.forEach(function (feed) {
-        // Uninstall and unregister all panels.
-        Home.panels.uninstall(feed.panelId);
-        Home.panels.unregister(feed.panelId);
-
-        // Delete all data.
-        HomeProvider.removePeriodicSync(feed.datasetId);
-        Task.spawn(function() {
-          let storage = HomeProvider.getStorage(feed.datasetId);
-          yield storage.deleteAll();
-        }).then(null, reportErrors);
-
-        // Clear the stored feeds.
-        Services.prefs.clearUserPref(FEEDS_PREF);
+        removeFeedPanel(feed.panelId, feed.datasetId);
       });
+
+      // Clear the stored feeds.
+      Services.prefs.clearUserPref(FEEDS_PREF);
     } catch (e) {}
   }
 }

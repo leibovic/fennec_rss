@@ -3,8 +3,8 @@
     <Description about="urn:mozilla:install-manifest">
         <em:id>homepagefeeds@margaretleibovic.com</em:id>
         <em:type>2</em:type>
-        <em:name>Home Page Feeds</em:name>
-        <em:version>0.1</em:version>
+        <em:name>Home Feeds</em:name>
+        <em:version>0.2</em:version>
         <em:bootstrap>true</em:bootstrap>
         <em:description>Allows you to subscribe to feeds on your home page.</em:description>
         <em:creator>Margaret Leibovic and Michael Comella</em:creator>
