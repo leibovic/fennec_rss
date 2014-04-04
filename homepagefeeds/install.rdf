@@ -2,7 +2,6 @@
 <RDF xmlns="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns:em="http://www.mozilla.org/2004/em-rdf#">
     <Description about="urn:mozilla:install-manifest">
         <em:id>homepagefeeds@margaretleibovic.com</em:id>
-        <em:unpack>true</em:unpack>
         <em:type>2</em:type>
         <em:name>Home Feeds</em:name>
         <em:version>0.2</em:version>

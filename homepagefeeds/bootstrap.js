@@ -233,7 +233,7 @@ function onPageShow(event) {
   }
 
   gPageActionId = chromeWin.NativeWindow.pageactions.add({
-    icon: "chrome://feeds/skin/icon_amo.png",
+    icon: "chrome://feeds/skin/icon_page_action.png",
     title: Strings.GetStringFromName("pageAction.subscribeToPage"),
     clickCallback: function onSubscribeClicked() {
       // Follow the regular "Subscribe" menu button action.

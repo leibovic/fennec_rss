@@ -1,0 +1,4 @@
+content    feeds          jar:chrome/homepagefeeds.jar!/content/
+locale     feeds en-US    jar:chrome/homepagefeeds.jar!/locale/en-US/
+locale     feeds fr       jar:chrome/homepagefeeds.jar!/locale/fr/
+skin       feeds          classic/1.0 jar:chrome/homepagefeeds.jar!/skin/
