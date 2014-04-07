@@ -1,4 +1,4 @@
-Home Page Feeds Add-on for Firefox for Android
+Home Feeds Add-on for Firefox for Android
 ============================================
 
 Allows you to subscribe to feeds on your home page.
