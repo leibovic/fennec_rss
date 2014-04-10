@@ -201,7 +201,7 @@ function unstoreFeed(panelId) {
   }
 }
 
-
+let gPageActionIcon;
 let gPageActionId;
 let gOriginalLoadFeed;
 
@@ -233,7 +233,7 @@ function onPageShow(event) {
   }
 
   gPageActionId = chromeWin.NativeWindow.pageactions.add({
-    icon: "chrome://feeds/skin/icon_page_action.png",
+    icon: gPageActionIcon,
     title: Strings.GetStringFromName("pageAction.subscribeToPage"),
     clickCallback: function onSubscribeClicked() {
       // Follow the regular "Subscribe" menu button action.
@@ -249,6 +249,16 @@ function loadIntoWindow(window) {
   // Monkey-patch FeedHandler to add option to subscribe menu.
   gOriginalLoadFeed = window.FeedHandler.loadFeed;
   window.FeedHandler.loadFeed = loadFeed;
+
+  Services.console.logStringMessage("**** window.devicePixelRatio: " + window.devicePixelRatio);
+
+  if (window.devicePixelRatio <= 1) {
+    gPageActionIcon = "chrome://feeds/skin/icon_urlbar_mdpi.png";
+  } else if (window.devicePixelRatio <= 1.5) {
+    gPageActionIcon = "chrome://feeds/skin/icon_urlbar_hdpi.png";
+  } else {
+    gPageActionIcon = "chrome://feeds/skin/icon_urlbar_xhdpi.png";
+  }
 }
 
 function unloadFromWindow(window) {
