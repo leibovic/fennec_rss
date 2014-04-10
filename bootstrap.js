@@ -14,6 +14,15 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 // Pref used to persist feed panel data between app runs.
 const FEEDS_PREF = "home.page.feeds";
 
+// XXX: Using data URIs as a workaround until bug 993698 is fixed.
+//const URLBAR_ICON_MDPI = "chrome://feeds/skin/icon_urlbar_mdpi.png";
+//const URLBAR_ICON_HDPI = "chrome://feeds/skin/icon_urlbar_hdpi.png";
+//const URLBAR_ICON_XHDPI = "chrome://feeds/skin/icon_urlbar_xhdpi.png";
+
+const URLBAR_ICON_MDPI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAABDUlEQVR42u3VsUpCYRiHcTUNqSEvoEtoCUdbgyCEhraIM0hg4Obi5OLQJegVBCHODuIVZEvRIgUei8ocpAvovD7DO7x80PAdTxDk8BvO/wwP53UwJSK/ah34o4GgUn3CDH00cYBMkgGBK0Qd20kEBvj6IfSKo7gBN7SLAH18m0iE5qoBN7aPO4jRiHuiFzzjGmfI676JnvMlp3ECEcT4xCXSGhk67wq+gQBt3DuhG2yggKnZWz4BN1bEyN5d97LZ5sj5BmxkB48QLLCl+62JHPqc6BgzvOFEtxJEnetWM9uVTyC0P6LZH3Tr6vMeRA2SCHR0C/U5C1Efvid6tyfS/QIRFmYbQzBZ/+H808ASnTUiP4oxmJUAAAAASUVORK5CYII=";
+const URLBAR_ICON_HDPI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAkCAYAAADhAJiYAAABm0lEQVR42u3XPyjEYRjA8TtxHSkL3XAiyWiyGChuUc5A2Q0UubJcyZ8sbBILx05IksFiZZGMZDDJnwzKHYd03Otre3rqzuX3+12Gd/hMz/B8631/73U+Y8y/YoNskA2yQdLA4Mg+3nCBdYyiGSXw/YHjoAwMtEesob3YQaYAZ+iFvxhBdzAFOkKj10Fh9COOTVz9EpXGkAdBeSMbMIWbPGFzXgfpqB8BxJDKETXhxZFFMY0oqmSQUI9jGCWLEbeD0mLBJ04RR7VaFMQBjPKB1mJ89u9YVmEVOIFRLlDmVtAtTB4P6BBR4RyXPeZWUA26MIZtvOQ4loiI6kQWRrhGqeMg6MByDONRLXxCWEStwih9Xn729dCP5IYICiGt5jtev0NNamkGdSJqRQW9IOj0DgWwhCSesYZysXRcLZ0VsxYYJeI0aB5GSYilleqlPhczP/SP84zToHsY5Rk+YUvNQ2K2q2Z7XgSlVFBMzXvEbEHNLr04skUV1K3mcTGbVLNXty91AkEVVCte9C8MiFkbkiLo0P4NskE2yAYp32bgEC3fNWtgAAAAAElFTkSuQmCC";
+const URLBAR_ICON_XHDPI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAACK0lEQVR42u3YzUvUURSA4RmRkRBahC0kCcKBwCiEXLRIMLACC9pEtKtQyFVIK5FqYRtByE2IUZAFFQQV6vQPZEUQIrQSWgSZCPaBnyNp4/HdtDncM5chfh/SXTy7A8PL3HuuTkZEdrQQEAJCQAgIASEgBOyIgEud3f1YxzdMYgRXcQRVyPyDWAJ+Qgzf8RTnkEtrQBHiRSiGcTBtAVKhEp7hcLqPkN8WHmBP0gFnUMAnLEIqNI/2+APsoAZcwF3MVnCsricXYMdU4Tge4jfEYyC5ADvir/0YxZYnojf2AD4oVy5AacOs53J3x3mJhyGYxyv04CiyzgBgLz54Is7GFbAOcfiKQeSNiFpPxCIa0vCQlTCGJuOb+AwxvI4joASBzyYGUa0i8liAGDqiDhhyrkjbG9SpiFb8MeankY16C2WxDyfRh7eedTmNWhVxG2I4HV2AHZXHozJHbFQF1GDGmB1P8iE7hR/GqmxVEefL3J+6JF/iZuMPvfcqIIspI+JKcgHARYjDMRVx2TpGUV7iRrzEKooo4JDjJZ6AKI/VzC4sQZQVVEexRg8Ye3zJ8Xi1GC9ujZp7DnFoiSLgCcQwgYzyEaK0qZkuiMO1KALmIIY1R8ANiHJLzTRDHO6nIeCE64Kqmd0Qh3dpOEL1EOWLY24DoswlcomVnON13nTMLUOUYpRr9AVWsIYCmsr8Q3MPv7AKwaRj5iaK6oexO+HH3RAQAkJACAgB/0XANnPCwNEB3RTGAAAAAElFTkSuQmCC";
+
 XPCOMUtils.defineLazyGetter(this, "Strings", function() {
   return Services.strings.createBundle("chrome://feeds/locale/feeds.properties");
 });
@@ -252,11 +261,11 @@ function loadIntoWindow(window) {
   window.FeedHandler.loadFeed = loadFeed;
 
   if (window.devicePixelRatio <= 1) {
-    gPageActionIcon = "chrome://feeds/skin/icon_urlbar_mdpi.png";
+    gPageActionIcon = URLBAR_ICON_MDPI;
   } else if (window.devicePixelRatio <= 1.5) {
-    gPageActionIcon = "chrome://feeds/skin/icon_urlbar_hdpi.png";
+    gPageActionIcon = URLBAR_ICON_HDPI;
   } else {
-    gPageActionIcon = "chrome://feeds/skin/icon_urlbar_xhdpi.png";
+    gPageActionIcon = URLBAR_ICON_XHDPI;
   }
 }
 
