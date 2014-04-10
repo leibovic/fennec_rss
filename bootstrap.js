@@ -90,7 +90,8 @@ function loadFeed(feed) {
   // JSON for Prompt.
   let p = new Prompt({
     window: chromeWin,
-    title: Strings.GetStringFromName("prompt.subscribeToPage")
+    // XXX: In Firefox 31+, we can get this string from browser.properties.
+    title: Strings.GetStringFromName("prompt.subscribeWith")
   });
   p.setSingleChoiceItems(handlers.map(function (handler) {
     return { label: handler.name };
@@ -249,8 +250,6 @@ function loadIntoWindow(window) {
   // Monkey-patch FeedHandler to add option to subscribe menu.
   gOriginalLoadFeed = window.FeedHandler.loadFeed;
   window.FeedHandler.loadFeed = loadFeed;
-
-  Services.console.logStringMessage("**** window.devicePixelRatio: " + window.devicePixelRatio);
 
   if (window.devicePixelRatio <= 1) {
     gPageActionIcon = "chrome://feeds/skin/icon_urlbar_mdpi.png";
