@@ -216,12 +216,12 @@ let gPageActionId;
 let gOriginalLoadFeed;
 
 function onPageShow(event) {
-  let chromeWin = Services.wm.getMostRecentWindow("navigator:browser");
-  if (!chromeWin) {
+  let window = Services.wm.getMostRecentWindow("navigator:browser");
+  if (!window) {
     return;
   }
 
-  let selectedTab = chromeWin.BrowserApp.selectedTab;
+  let selectedTab = window.BrowserApp.selectedTab;
 
   // Ignore load events on frames and other documents.
   // selectedTab may be null during startup.
@@ -229,25 +229,34 @@ function onPageShow(event) {
     return;
   }
 
+  updatePageAction(window, selectedTab);
+}
+
+function onTabSelect(event) {
+  let window = event.currentTarget.ownerDocument.defaultView;
+  updatePageAction(window, window.BrowserApp.selectedTab);
+}
+
+function updatePageAction(window, tab) {
   // Remove any current page action item.
   if (gPageActionId) {
-    chromeWin.NativeWindow.pageactions.remove(gPageActionId);
+    window.NativeWindow.pageactions.remove(gPageActionId);
     gPageActionId = null;
   }
 
-  let feeds = selectedTab.browser.feeds;
+  let feeds = tab.browser.feeds;
 
   // Bail if there are no feeds for this page.
   if (!feeds || feeds.length == 0) {
     return;
   }
 
-  gPageActionId = chromeWin.NativeWindow.pageactions.add({
+  gPageActionId = window.NativeWindow.pageactions.add({
     icon: gPageActionIcon,
     title: Strings.GetStringFromName("pageAction.subscribeToPage"),
     clickCallback: function onSubscribeClicked() {
       // Follow the regular "Subscribe" menu button action.
-      let args = JSON.stringify({ tabId: selectedTab.id });
+      let args = JSON.stringify({ tabId: tab.id });
       Services.obs.notifyObservers(null, "Feeds:Subscribe", args);
     }
   });
@@ -255,6 +264,7 @@ function onPageShow(event) {
 
 function loadIntoWindow(window) {
   window.BrowserApp.deck.addEventListener("pageshow", onPageShow, false);
+  window.BrowserApp.deck.addEventListener("TabSelect", onTabSelect, false);
 
   // Monkey-patch FeedHandler to add option to subscribe menu.
   gOriginalLoadFeed = window.FeedHandler.loadFeed;
@@ -270,7 +280,9 @@ function loadIntoWindow(window) {
 }
 
 function unloadFromWindow(window) {
-  window.BrowserApp.deck.removeEventListener("pageshow", onPageShow);
+  window.BrowserApp.deck.removeEventListener("pageshow", onPageShow, false);
+  window.BrowserApp.deck.removeEventListener("TabSelect", onTabSelect, false);
+
   window.FeedHandler.loadFeed = gOriginalLoadFeed;
 }
 
