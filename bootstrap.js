@@ -362,7 +362,7 @@ function startup(aData, aReason) {
   } catch (e) {}
 
   // Create an empty panel to tell help users with the add-on.
-  /*
+  /* Disabled until we fix bug 1004517
   Home.panels.register(EMPTY_PANEL_ID, emptyOptionsCallback);
   if (aReason == ADDON_INSTALL) {
     Home.panels.install(EMPTY_PANEL_ID);
@@ -380,7 +380,7 @@ function shutdown(aData, aReason) {
 
   // If the add-on is being uninstalled, also remove all panel data.
   if (aReason == ADDON_UNINSTALL) {
-    /*
+    /* Disabled until we fix bug 1004517
     Home.panels.uninstall(EMPTY_PANEL_ID);
     Home.panels.unregister(EMPTY_PANEL_ID);
     */
