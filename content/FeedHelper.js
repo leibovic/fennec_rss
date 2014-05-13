@@ -1,9 +1,5 @@
 "use strict";
 
-const { classes: Cc, interfaces: Ci, utils: Cu } = Components;
-
-Cu.import("resource://gre/modules/Services.jsm");
-
 var FeedHelper = {
   parseFeed: function(feedUrl, onFinish, onError) {
     let listener = {
@@ -55,6 +51,13 @@ var FeedHelper = {
   feedToItems: function(parsedFeed) {
     let items = [];
 
+    // Create a browser element to create HTML from summary text
+    let browser = document.createElement("browser");
+    browser.setAttribute("type", "content");
+    browser.setAttribute("collapsed", "true");
+    browser.setAttribute("disablehistory", "true");
+    document.documentElement.appendChild(browser);
+
     for (let i = 0; i < parsedFeed.items.length; i++) {
       let entry = parsedFeed.items.queryElementAt(i, Ci.nsIFeedEntry);
       entry.QueryInterface(Ci.nsIFeedContainer);
@@ -83,6 +86,20 @@ var FeedHelper = {
           }
         }
       }
+
+      // Try to find an image in the summary
+      if (!item.image_url) {
+        let doc = browser.contentDocument;
+        let div = doc.createElement("div");
+        div.innerHTML = entry.summary.text;
+        let img = div.querySelector("img");
+        if (img) {
+          item.image_url = img.src;
+        }
+      }
+
+      // Clean up the browser element
+      browser.parentNode.removeChild(browser);
 
       items.push(item);
     }

@@ -35,9 +35,12 @@ XPCOMUtils.defineLazyGetter(this, "Strings", function() {
 });
 
 XPCOMUtils.defineLazyGetter(this, "FeedHelper", function() {
-  let sandbox = {};
-  Services.scriptloader.loadSubScript("chrome://feeds/content/FeedHelper.js", sandbox);
-  return sandbox["FeedHelper"];
+  let win = Services.wm.getMostRecentWindow("navigator:browser");
+  if (win.FeedHelper) {
+    return FeedHelper;
+  }
+  Services.scriptloader.loadSubScript("chrome://vimeopanel/content/FeedHelper.js", win);
+  return win["FeedHelper"];
 });
 
 function reportErrors(e) {
