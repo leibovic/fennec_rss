@@ -39,7 +39,7 @@ XPCOMUtils.defineLazyGetter(this, "FeedHelper", function() {
   if (win.FeedHelper) {
     return FeedHelper;
   }
-  Services.scriptloader.loadSubScript("chrome://vimeopanel/content/FeedHelper.js", win);
+  Services.scriptloader.loadSubScript("chrome://feeds/content/FeedHelper.js", win);
   return win["FeedHelper"];
 });
 

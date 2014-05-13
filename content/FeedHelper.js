@@ -97,12 +97,12 @@ var FeedHelper = {
           item.image_url = img.src;
         }
       }
-
-      // Clean up the browser element
-      browser.parentNode.removeChild(browser);
-
       items.push(item);
     }
+
+    // Clean up the browser element
+    browser.parentNode.removeChild(browser);
+
     return items;
   }
 };
