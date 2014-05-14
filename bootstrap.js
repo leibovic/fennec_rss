@@ -37,7 +37,7 @@ XPCOMUtils.defineLazyGetter(this, "Strings", function() {
 XPCOMUtils.defineLazyGetter(this, "FeedHelper", function() {
   let win = Services.wm.getMostRecentWindow("navigator:browser");
   if (win.FeedHelper) {
-    return FeedHelper;
+    return win.FeedHelper;
   }
   Services.scriptloader.loadSubScript("chrome://feeds/content/FeedHelper.js", win);
   return win["FeedHelper"];
@@ -56,13 +56,14 @@ function reportErrors(e) {
 /**
  * @return optionsCallback function for a basic list panel.
  */
-function getOptionsCallback(panelId, title, datasetId) {
+function getOptionsCallback(panelId, title, datasetId, refreshDataset) {
   return function() {
     return {
       title: title,
       views: [{
         type: Home.panels.View.LIST,
-        dataset: datasetId
+        dataset: datasetId,
+        onrefresh: refreshDataset
       }],
       onuninstall: function() {
         // Unregister the panel and delete its data if the user
@@ -150,11 +151,17 @@ function addFeedPanel(feed) {
   let panelId = uuidgen.generateUUID().toString();
   let datasetId = uuidgen.generateUUID().toString();
 
+  function refreshDataset() {
+    FeedHelper.parseFeed(feed.href, function(parsedFeed) {
+      saveFeedItems(parsedFeed, datasetId);
+    });
+  }
+
   // Immediately fetch and parse the feed to get title for panel.
   FeedHelper.parseFeed(feed.href, function (parsedFeed) {
     let title = parsedFeed.title.plainText();
 
-    Home.panels.register(panelId, getOptionsCallback(panelId, title, datasetId));
+    Home.panels.register(panelId, getOptionsCallback(panelId, title, datasetId, refreshDataset));
     Home.panels.install(panelId);
 
     saveFeedItems(parsedFeed, datasetId);
@@ -165,11 +172,7 @@ function addFeedPanel(feed) {
   });
 
   // Add periodic sync to update feed once per hour.
-  HomeProvider.addPeriodicSync(datasetId, 3600, function () {
-    FeedHelper.parseFeed(feed.href, function(parsedFeed) {
-      saveFeedItems(parsedFeed, datasetId);
-    });
-  });
+  HomeProvider.addPeriodicSync(datasetId, 3600, refreshDataset);
 }
 
 /**
@@ -352,15 +355,17 @@ function startup(aData, aReason) {
   try {
     let feeds = JSON.parse(Services.prefs.getCharPref(FEEDS_PREF));
     feeds.forEach(function(feed) {
-      // Register any existing panels.
-      Home.panels.register(feed.panelId, getOptionsCallback(feed.panelId, feed.title, feed.datasetId));
-
-      // Add periodic sync for existing feeds.
-      HomeProvider.addPeriodicSync(feed.datasetId, 3600, function() {
+      function refreshDataset() {
         FeedHelper.parseFeed(feed.url, function(parsedFeed) {
           saveFeedItems(parsedFeed, feed.datasetId);
         });
-      });
+      }
+
+      // Register any existing panels.
+      Home.panels.register(feed.panelId, getOptionsCallback(feed.panelId, feed.title, feed.datasetId, refreshDataset));
+
+      // Add periodic sync for existing feeds.
+      HomeProvider.addPeriodicSync(feed.datasetId, 3600, refreshDataset);
     });
   } catch (e) {}
 
