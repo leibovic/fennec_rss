@@ -8,6 +8,20 @@
         <em:bootstrap>true</em:bootstrap>
         <em:description>Allows you to subscribe to feeds on your home page.</em:description>
         <em:creator>Margaret Leibovic and Michael Comella</em:creator>
+        <em:localized>
+          <Description>
+            <em:locale>de</em:locale>
+            <em:name>Home Feeds</em:name>
+            <em:description>Ermöglicht es Ihnen, Feeds auf Ihrer Startseite zu abonnieren.</em:description>
+          </Description>
+        </em:localized>
+        <em:localized>
+          <Description>
+            <em:locale>es-ES</em:locale>
+            <em:name>Home Feeds</em:name>
+            <em:description>Permite suscribirte a canales en tu página de inicio.</em:description>
+          </Description>
+        </em:localized>
 
         <!-- Mobile Native -->
         <em:targetApplication>
