@@ -2,4 +2,8 @@ content       feeds  content/
 locale        feeds  de            locale/de/
 locale        feeds  en-US         locale/en-US/
 locale        feeds  es-ES         locale/es-ES/
+locale        feeds  fr            locale/fr/
+locale        feeds  id            locale/id/
+locale        feeds  it            locale/it/
+locale        feeds  pt-BR         locale/pt-BR/
 skin          feeds  classic/1.0   skin/
