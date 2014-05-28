@@ -22,6 +22,34 @@
             <em:description>Permite suscribirte a canales en tu página de inicio.</em:description>
           </Description>
         </em:localized>
+        <em:localized>
+          <Description>
+            <em:locale>fr</em:locale>
+            <em:name>Home Feeds</em:name>
+            <em:description>Permet de vous abonner à des flux sur votre page d'accueil.</em:description>
+          </Description>
+        </em:localized>
+        <em:localized>
+          <Description>
+            <em:locale>id</em:locale>
+            <em:name>Home Feeds</em:name>
+            <em:description>Dapat digunakan untuk berlangganan umpan ke laman beranda Anda.</em:description>
+          </Description>
+        </em:localized>
+        <em:localized>
+          <Description>
+            <em:locale>it</em:locale>
+            <em:name>Home Feeds</em:name>
+            <em:description>Consente di abbonarsi a un feed e visualizzarlo nella schermata iniziale di Firefox.</em:description>
+          </Description>
+        </em:localized>
+        <em:localized>
+          <Description>
+            <em:locale>pt-BR</em:locale>
+            <em:name>Home Feeds</em:name>
+            <em:description>Permite que você se inscreva em feeds diretamente na sua página inicial.</em:description>
+          </Description>
+        </em:localized>
 
         <!-- Mobile Native -->
         <em:targetApplication>
