@@ -14,9 +14,6 @@ Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 // Pref used to persist feed panel data between app runs.
 const FEEDS_PREF = "home.page.feeds";
 
-const EMPTY_PANEL_ID = "homepagefeeds.emtpy.panel@margaretleibovic.com";
-const EMPTY_DATASET_ID = "homepagefeeds.emtpy.dataset@margaretleibovic.com";
-
 // XXX: Using data URIs as a workaround until bug 993698 is fixed.
 //const URLBAR_ICON_MDPI = "chrome://feeds/skin/icon_urlbar_mdpi.png";
 //const URLBAR_ICON_HDPI = "chrome://feeds/skin/icon_urlbar_hdpi.png";
@@ -26,9 +23,6 @@ const URLBAR_ICON_MDPI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAY
 const URLBAR_ICON_HDPI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAkCAYAAADhAJiYAAABm0lEQVR42u3XPyjEYRjA8TtxHSkL3XAiyWiyGChuUc5A2Q0UubJcyZ8sbBILx05IksFiZZGMZDDJnwzKHYd03Otre3rqzuX3+12Gd/hMz/B8631/73U+Y8y/YoNskA2yQdLA4Mg+3nCBdYyiGSXw/YHjoAwMtEesob3YQaYAZ+iFvxhBdzAFOkKj10Fh9COOTVz9EpXGkAdBeSMbMIWbPGFzXgfpqB8BxJDKETXhxZFFMY0oqmSQUI9jGCWLEbeD0mLBJ04RR7VaFMQBjPKB1mJ89u9YVmEVOIFRLlDmVtAtTB4P6BBR4RyXPeZWUA26MIZtvOQ4loiI6kQWRrhGqeMg6MByDONRLXxCWEStwih9Xn729dCP5IYICiGt5jtev0NNamkGdSJqRQW9IOj0DgWwhCSesYZysXRcLZ0VsxYYJeI0aB5GSYilleqlPhczP/SP84zToHsY5Rk+YUvNQ2K2q2Z7XgSlVFBMzXvEbEHNLr04skUV1K3mcTGbVLNXty91AkEVVCte9C8MiFkbkiLo0P4NskE2yAYp32bgEC3fNWtgAAAAAElFTkSuQmCC";
 const URLBAR_ICON_XHDPI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAACK0lEQVR42u3YzUvUURSA4RmRkRBahC0kCcKBwCiEXLRIMLACC9pEtKtQyFVIK5FqYRtByE2IUZAFFQQV6vQPZEUQIrQSWgSZCPaBnyNp4/HdtDncM5chfh/SXTy7A8PL3HuuTkZEdrQQEAJCQAgIASEgBOyIgEud3f1YxzdMYgRXcQRVyPyDWAJ+Qgzf8RTnkEtrQBHiRSiGcTBtAVKhEp7hcLqPkN8WHmBP0gFnUMAnLEIqNI/2+APsoAZcwF3MVnCsricXYMdU4Tge4jfEYyC5ADvir/0YxZYnojf2AD4oVy5AacOs53J3x3mJhyGYxyv04CiyzgBgLz54Is7GFbAOcfiKQeSNiFpPxCIa0vCQlTCGJuOb+AwxvI4joASBzyYGUa0i8liAGDqiDhhyrkjbG9SpiFb8MeankY16C2WxDyfRh7eedTmNWhVxG2I4HV2AHZXHozJHbFQF1GDGmB1P8iE7hR/GqmxVEefL3J+6JF/iZuMPvfcqIIspI+JKcgHARYjDMRVx2TpGUV7iRrzEKooo4JDjJZ6AKI/VzC4sQZQVVEexRg8Ye3zJ8Xi1GC9ujZp7DnFoiSLgCcQwgYzyEaK0qZkuiMO1KALmIIY1R8ANiHJLzTRDHO6nIeCE64Kqmd0Qh3dpOEL1EOWLY24DoswlcomVnON13nTMLUOUYpRr9AVWsIYCmsr8Q3MPv7AKwaRj5iaK6oexO+HH3RAQAkJACAgB/0XANnPCwNEB3RTGAAAAAElFTkSuQmCC";
 const URLBAR_ICON_XXHDPI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAYAAABV7bNHAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2tpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuNS1jMDE0IDc5LjE1MTQ4MSwgMjAxMy8wMy8xMy0xMjowOToxNSAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDpGODdGMTE3NDA3MjA2ODExODA4M0ZCMjlBOUNFMjIzMSIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDo2MTQ2RTI3NENBNDAxMUUzQUYxQURDRkMyMEJGNDA1RCIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDo2MTQ2RTI3M0NBNDAxMUUzQUYxQURDRkMyMEJGNDA1RCIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ0MgKE1hY2ludG9zaCkiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDpjYWIxMmRjYS02MDVkLTQ4NDMtOGE4My1iYTZmZGFlMjAwYTMiIHN0UmVmOmRvY3VtZW50SUQ9InhtcC5kaWQ6Rjg3RjExNzQwNzIwNjgxMTgwODNGQjI5QTlDRTIyMzEiLz4gPC9yZGY6RGVzY3JpcHRpb24+IDwvcmRmOlJERj4gPC94OnhtcG1ldGE+IDw/eHBhY2tldCBlbmQ9InIiPz4YC31BAAAEg0lEQVR42uybaWwNURTH+2yxhw+KUlqUVmmrRKR2JUSqIoI0llhaS0pE+GCL+mCniaAqJUJDQy3hAyKIRKja1RJRtW8VWyyxV/1vepo88ubeO6+vZub1nOSX1869c2fm/+69Z5nWVVpaGsBmbNVYAhaIBWKBWCAWiAVigVggNhaIBWKBWCC7WY2KDjAxeUYMPnaCCPAcPAIPwR1wDVwB7yvzIXZsy7SvQLCtIIp+DiH6ubWXklhnwEniQ5WZQbAwRbsLdCSmgxIS6wBRzHvQ31Yd9AebwBNwCCTScRboH6sJhoPDoBDMAnX9TaAGPrqXNmADKAIzQC1/EeiHj++pOdgMboF4fxBofyXdWxh5vGzQyMlebAo4B6JBEGgB2vtw6Y0HvUESyP/fArl88doHwaKnwyIeigV9iKgKeqqfIJXiLkcFikb2iDhIvzcDo4k4io/Merws0BIspQDUr9x8MXmpXqAtSPcyol5C5/p1HCRytXkgFKwEX0yePwfMrwqBokhiF4JIcMTkuStAipMEqlfB/SoBTDMxm8QetoW8nH29GDzYYCp3NKVyxw1wiVz/WS+WTwzNpiDN/iL5HQRPdtquAhVKMvpvIM8tc3+lOWwrcAq00+z/WoQUEOmZHZdYoKStNhgAMmh2nQCjNMILkeUPBLoP3ATswpflsqNAdUyUOcRD57olpDKhHoOhNDt0rC/tYbYTyJusuzUlpAVgiKTfTTDMxD62GrOoiT9l86LKeAzskSSkF8Akzci5IQWSthJorw/GGAMug3CDdrEs12qONQ2zKNROAk2kjXcZ2A7Og49ejCPSD1Gr7mzQvkgzmxc521wnZPPtaFMeQZ+6X8YL0J28nicRb2o4hq8gGG7/rZ1TjSKKdAdTzpVON66yIFpSnkoj9ymT1/GsE5yUiz2h5LSDZs4VRwmpJ1tPya7KUpwkULk9Jbe9WMMrpVENyZPXTNO4VgSWfqwTs3khzHIwW9GvPlhg0LY7oKyor+MdHVvu2AjWKfpMNoiPfoM1GtdIdHo9aCFl/rJZlGzQJt6mvFOMH45l1tYuAtWiZXOZvNV3csmL6EE9mSjET6WShZFNl7jybI37ireDQIFU/xEepitl8UKwThRAXqUYxpNdp1KILIDsIplFKutpqUCYwiJeEe/Wu0m6hZF7N3rvvkpxmZEGx/M1lllPq2fQONBDo5+IgVIN2q5RUmpkCQbHxdI8rkph8CU2s1KgJBN9x0raciVtIj9rbNCWp3HdGCsFijbRN1zSdlRxn70le5jKOjnVzbvbXSBLLrsaHH+sMXaklQIVmOh7RxFh3/Jipr7UuG6olQLtNtE3R9H+QNLW3uD4L/BZo0JgmUA5AXqFLDF7MhR9ZC47RNJWohg32DKBdmzLLKGcR5Yy3CNXrSq+F0rafknabmtUESzdpMWrGfFXGzPBRbdUo4DyrVjF8nFfrvvAm4Cy9/bliPGyJOcl0ywuF/GT27mFFakNufj/5p3j5lkgFogFYoHYWCAWiAVigVggFogFYoHYWCAWyAf2R4ABACyK/2sJyPQZAAAAAElFTkSuQmCC";
-
-// XXX: This doesn't work, see bug 1004517.
-const EMPTY_PANEL_ICON = "chrome://feeds/skin/icon_empty_panel.png";
 
 XPCOMUtils.defineLazyGetter(this, "Strings", function() {
   return Services.strings.createBundle("chrome://feeds/locale/feeds.properties");
@@ -73,23 +67,6 @@ function getOptionsCallback(panelId, title, datasetId, refreshDataset) {
       }
     };
   };
-}
-
-/**
- * Panel options callback for an empty panel added when user installs add-on.
- */
-function emptyOptionsCallback() {
-  return {
-    title: Strings.GetStringFromName("empty.title"),
-    views: [{
-      type: Home.panels.View.LIST,
-      dataset: EMPTY_DATASET_ID,
-      empty: {
-        text: Strings.GetStringFromName("empty.text"),
-        imageUrl: EMPTY_PANEL_ICON
-      }
-    }]
-  }
 }
 
 /**
@@ -396,14 +373,6 @@ function startup(aData, aReason) {
       HomeProvider.addPeriodicSync(feed.datasetId, 3600, refreshDataset);
     });
   } catch (e) {}
-
-  // Create an empty panel to tell help users with the add-on.
-  /* Disabled until we fix bug 1004517
-  Home.panels.register(EMPTY_PANEL_ID, emptyOptionsCallback);
-  if (aReason == ADDON_INSTALL) {
-    Home.panels.install(EMPTY_PANEL_ID);
-  }
-  */
 }
 
 function shutdown(aData, aReason) {
@@ -416,10 +385,6 @@ function shutdown(aData, aReason) {
 
   // If the add-on is being uninstalled, also remove all panel data.
   if (aReason == ADDON_UNINSTALL) {
-    /* Disabled until we fix bug 1004517
-    Home.panels.uninstall(EMPTY_PANEL_ID);
-    Home.panels.unregister(EMPTY_PANEL_ID);
-    */
     try {
       let feeds = JSON.parse(Services.prefs.getCharPref(FEEDS_PREF));
       feeds.forEach(function (feed) {
