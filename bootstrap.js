@@ -146,6 +146,13 @@ function loadFeed(feed) {
  * @param feed object created by DOMLinkAdded handler in browser.js
  */
 function addFeedPanel(feed) {
+  // Check to see if a panel for the feed already exists.
+  if (feedPanelExists(feed.href)) {
+    let chromeWin = Services.wm.getMostRecentWindow("navigator:browser");
+    chromeWin.NativeWindow.toast.show(Strings.GetStringFromName("toast.feedAlreadyExists"), "short");
+    return;
+  }
+
   let uuidgen = Cc["@mozilla.org/uuid-generator;1"].getService(Ci.nsIUUIDGenerator);
   // Prefix an add-on identifier for UI telemetry purposes.
   let panelId = uuidgen.generateUUID().toString();
@@ -200,6 +207,27 @@ function saveFeedItems(parsedFeed, datasetId) {
     yield storage.deleteAll();
     yield storage.save(items);
   }).then(null, reportErrors);
+}
+
+/**
+ * Checks to see if panel already exists for feed.
+ */
+function feedPanelExists(url) {
+  let feeds;
+  try {
+    feeds = JSON.parse(Services.prefs.getCharPref(FEEDS_PREF));
+  } catch (e) {
+    // If no feeds are stored, this feed definitely isn't stored!
+    return false;
+  }
+
+  for (let i = 0; i < feeds.length; i++) {
+    if (feeds[i].url == url) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 /**
