@@ -236,7 +236,7 @@ function unstoreFeed(panelId) {
     let feeds = JSON.parse(Services.prefs.getCharPref(FEEDS_PREF));
     for (let i = 0; i < feeds.length; i++) {
       if (feeds[i].panelId === panelId) {
-        feeds.splice(i, 0);
+        feeds.splice(i, 1);
         break;
       }
     }
