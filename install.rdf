@@ -45,6 +45,13 @@
         </em:localized>
         <em:localized>
           <Description>
+            <em:locale>ja</em:locale>
+            <em:name>Home Feeds</em:name>
+            <em:description>このアドオンを利用すると、ホーム画面でフィードを表示できるようになります。</em:description>
+          </Description>
+        </em:localized>
+        <em:localized>
+          <Description>
             <em:locale>pt-BR</em:locale>
             <em:name>Home Feeds</em:name>
             <em:description>Permite que você se inscreva em feeds diretamente na sua página inicial.</em:description>
