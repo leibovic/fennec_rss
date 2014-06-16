@@ -132,7 +132,7 @@ function addFeedPanel(feed) {
 
   let uuidgen = Cc["@mozilla.org/uuid-generator;1"].getService(Ci.nsIUUIDGenerator);
   // Prefix an add-on identifier for UI telemetry purposes.
-  let panelId = uuidgen.generateUUID().toString();
+  let panelId = "home-feeds-" + uuidgen.generateUUID().toString();
   let datasetId = uuidgen.generateUUID().toString();
 
   function refreshDataset() {
