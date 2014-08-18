@@ -86,11 +86,19 @@ function loadFeed(feed) {
   let chromeWin = Services.wm.getMostRecentWindow("navigator:browser");
   let BrowserApp = chromeWin.BrowserApp;
 
-  // Get the default feed handlers from FeedHandler.
-  let handlers = chromeWin.FeedHandler.getContentHandlers(this.TYPE_MAYBE_FEED);
+  let handlers = [];
 
-  handlers = handlers.map(function(handler) {
-    return {
+  // Make sure our custom handler is first in the list.
+  handlers.push({
+    name: Strings.brand.GetStringFromName("brandShortName"),
+    action: addFeedPanel
+  });
+
+  // Get the default feed handlers from FeedHandler.
+  let defaultHandlers = chromeWin.FeedHandler.getContentHandlers(this.TYPE_MAYBE_FEED);
+
+  defaultHandlers.forEach(function(handler) {
+    handlers.push({
       name: handler.name,
       action: function defaultHandlerAction(feed) {
         // Merge the handler URL and the feed URL.
@@ -100,13 +108,7 @@ function loadFeed(feed) {
         // Open the resultant URL in a new tab.
         BrowserApp.addTab(readerURL, { parentId: BrowserApp.selectedTab.id });
       }
-    }
-  });
-
-  // Add our own custom handler.
-  handlers.push({
-    name: Strings.brand.GetStringFromName("brandShortName"),
-    action: addFeedPanel
+    });
   });
 
   // JSON for Prompt.
