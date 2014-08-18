@@ -27,6 +27,7 @@ const URLBAR_ICON_XXHDPI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAA
 var Strings = {};
 [
   ["brand", "chrome://branding/locale/brand.properties"],
+  ["browser", "chrome://browser/locale/browser.properties"],
   ["feeds", "chrome://feeds/locale/feeds.properties"]
 ].forEach(function (aStringBundle) {
   let [name, bundle] = aStringBundle;
@@ -309,9 +310,22 @@ function updatePageAction(window, tab) {
     icon: gPageActionIcon,
     title: Strings.feeds.GetStringFromName("pageAction.subscribeToPage"),
     clickCallback: function onSubscribeClicked() {
-      // Follow the regular "Subscribe" menu button action.
-      let args = JSON.stringify({ tabId: tab.id });
-      Services.obs.notifyObservers(null, "Feeds:Subscribe", args);
+      if (feeds.length == 1) {
+        addFeedPanel(feeds[0]);
+      } else {
+        // Prompt the user to choose a feed. Logic copied from FeedHandler.js.
+        let p = new Prompt({
+          window: tab.browser.contentWindow,
+          title: Strings.browser.GetStringFromName("feedHandler.chooseFeed")
+        }).setSingleChoiceItems(feeds.map(function(feed) {
+          return { label: feed.title || feed.href }
+        })).show(function(data) {
+          let feedIndex = data.button;
+          if (feedIndex > -1) {
+            addFeedPanel(feeds[feedIndex]);
+          }
+        });
+      }
     }
   });
 }
