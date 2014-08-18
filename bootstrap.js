@@ -12,7 +12,10 @@ Cu.import("resource://gre/modules/Task.jsm");
 Cu.import("resource://gre/modules/XPCOMUtils.jsm");
 
 // Pref used to persist feed panel data between app runs.
-const FEEDS_PREF = "home.page.feeds";
+const FEEDS_PREF = "extensions.homepagefeeds.feeds";
+
+// Old pref that may need to be migrated.
+const FEEDS_PREF_OLD = "home.page.feeds";
 
 // XXX: Using data URIs as a workaround until bug 993698 is fixed.
 //const URLBAR_ICON_MDPI = "chrome://feeds/skin/icon_urlbar_mdpi.png";
@@ -380,6 +383,15 @@ let gWindowListener = {
 };
 
 function startup(aData, aReason) {
+  if (aReason == ADDON_UPGRADE) {
+    // Migrate the feeds pref if it exists.
+    try {
+      let prefValue = Services.prefs.getCharPref(FEEDS_PREF_OLD);
+      Services.prefs.setCharPref(FEEDS_PREF, prefValue);
+      Services.prefs.clearUserPref(FEEDS_PREF_OLD);
+    } catch (e) {}
+  }
+
   let win = Services.wm.getMostRecentWindow("navigator:browser");
   if (win) {
     // Load into the browser window if it already exists.
