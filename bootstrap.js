@@ -24,9 +24,17 @@ const URLBAR_ICON_HDPI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAk
 const URLBAR_ICON_XHDPI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAACK0lEQVR42u3YzUvUURSA4RmRkRBahC0kCcKBwCiEXLRIMLACC9pEtKtQyFVIK5FqYRtByE2IUZAFFQQV6vQPZEUQIrQSWgSZCPaBnyNp4/HdtDncM5chfh/SXTy7A8PL3HuuTkZEdrQQEAJCQAgIASEgBOyIgEud3f1YxzdMYgRXcQRVyPyDWAJ+Qgzf8RTnkEtrQBHiRSiGcTBtAVKhEp7hcLqPkN8WHmBP0gFnUMAnLEIqNI/2+APsoAZcwF3MVnCsricXYMdU4Tge4jfEYyC5ADvir/0YxZYnojf2AD4oVy5AacOs53J3x3mJhyGYxyv04CiyzgBgLz54Is7GFbAOcfiKQeSNiFpPxCIa0vCQlTCGJuOb+AwxvI4joASBzyYGUa0i8liAGDqiDhhyrkjbG9SpiFb8MeankY16C2WxDyfRh7eedTmNWhVxG2I4HV2AHZXHozJHbFQF1GDGmB1P8iE7hR/GqmxVEefL3J+6JF/iZuMPvfcqIIspI+JKcgHARYjDMRVx2TpGUV7iRrzEKooo4JDjJZ6AKI/VzC4sQZQVVEexRg8Ye3zJ8Xi1GC9ujZp7DnFoiSLgCcQwgYzyEaK0qZkuiMO1KALmIIY1R8ANiHJLzTRDHO6nIeCE64Kqmd0Qh3dpOEL1EOWLY24DoswlcomVnON13nTMLUOUYpRr9AVWsIYCmsr8Q3MPv7AKwaRj5iaK6oexO+HH3RAQAkJACAgB/0XANnPCwNEB3RTGAAAAAElFTkSuQmCC";
 const URLBAR_ICON_XXHDPI = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEgAAABICAYAAABV7bNHAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2tpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuNS1jMDE0IDc5LjE1MTQ4MSwgMjAxMy8wMy8xMy0xMjowOToxNSAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDpGODdGMTE3NDA3MjA2ODExODA4M0ZCMjlBOUNFMjIzMSIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDo2MTQ2RTI3NENBNDAxMUUzQUYxQURDRkMyMEJGNDA1RCIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDo2MTQ2RTI3M0NBNDAxMUUzQUYxQURDRkMyMEJGNDA1RCIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ0MgKE1hY2ludG9zaCkiPiA8eG1wTU06RGVyaXZlZEZyb20gc3RSZWY6aW5zdGFuY2VJRD0ieG1wLmlpZDpjYWIxMmRjYS02MDVkLTQ4NDMtOGE4My1iYTZmZGFlMjAwYTMiIHN0UmVmOmRvY3VtZW50SUQ9InhtcC5kaWQ6Rjg3RjExNzQwNzIwNjgxMTgwODNGQjI5QTlDRTIyMzEiLz4gPC9yZGY6RGVzY3JpcHRpb24+IDwvcmRmOlJERj4gPC94OnhtcG1ldGE+IDw/eHBhY2tldCBlbmQ9InIiPz4YC31BAAAEg0lEQVR42uybaWwNURTH+2yxhw+KUlqUVmmrRKR2JUSqIoI0llhaS0pE+GCL+mCniaAqJUJDQy3hAyKIRKja1RJRtW8VWyyxV/1vepo88ubeO6+vZub1nOSX1869c2fm/+69Z5nWVVpaGsBmbNVYAhaIBWKBWCAWiAVigVggNhaIBWKBWCC7WY2KDjAxeUYMPnaCCPAcPAIPwR1wDVwB7yvzIXZsy7SvQLCtIIp+DiH6ubWXklhnwEniQ5WZQbAwRbsLdCSmgxIS6wBRzHvQ31Yd9AebwBNwCCTScRboH6sJhoPDoBDMAnX9TaAGPrqXNmADKAIzQC1/EeiHj++pOdgMboF4fxBofyXdWxh5vGzQyMlebAo4B6JBEGgB2vtw6Y0HvUESyP/fArl88doHwaKnwyIeigV9iKgKeqqfIJXiLkcFikb2iDhIvzcDo4k4io/Merws0BIspQDUr9x8MXmpXqAtSPcyol5C5/p1HCRytXkgFKwEX0yePwfMrwqBokhiF4JIcMTkuStAipMEqlfB/SoBTDMxm8QetoW8nH29GDzYYCp3NKVyxw1wiVz/WS+WTwzNpiDN/iL5HQRPdtquAhVKMvpvIM8tc3+lOWwrcAq00+z/WoQUEOmZHZdYoKStNhgAMmh2nQCjNMILkeUPBLoP3ATswpflsqNAdUyUOcRD57olpDKhHoOhNDt0rC/tYbYTyJusuzUlpAVgiKTfTTDMxD62GrOoiT9l86LKeAzskSSkF8Akzci5IQWSthJorw/GGAMug3CDdrEs12qONQ2zKNROAk2kjXcZ2A7Og49ejCPSD1Gr7mzQvkgzmxc521wnZPPtaFMeQZ+6X8YL0J28nicRb2o4hq8gGG7/rZ1TjSKKdAdTzpVON66yIFpSnkoj9ymT1/GsE5yUiz2h5LSDZs4VRwmpJ1tPya7KUpwkULk9Jbe9WMMrpVENyZPXTNO4VgSWfqwTs3khzHIwW9GvPlhg0LY7oKyor+MdHVvu2AjWKfpMNoiPfoM1GtdIdHo9aCFl/rJZlGzQJt6mvFOMH45l1tYuAtWiZXOZvNV3csmL6EE9mSjET6WShZFNl7jybI37ireDQIFU/xEepitl8UKwThRAXqUYxpNdp1KILIDsIplFKutpqUCYwiJeEe/Wu0m6hZF7N3rvvkpxmZEGx/M1lllPq2fQONBDo5+IgVIN2q5RUmpkCQbHxdI8rkph8CU2s1KgJBN9x0raciVtIj9rbNCWp3HdGCsFijbRN1zSdlRxn70le5jKOjnVzbvbXSBLLrsaHH+sMXaklQIVmOh7RxFh3/Jipr7UuG6olQLtNtE3R9H+QNLW3uD4L/BZo0JgmUA5AXqFLDF7MhR9ZC47RNJWohg32DKBdmzLLKGcR5Yy3CNXrSq+F0rafknabmtUESzdpMWrGfFXGzPBRbdUo4DyrVjF8nFfrvvAm4Cy9/bliPGyJOcl0ywuF/GT27mFFakNufj/5p3j5lkgFogFYoHYWCAWiAVigVggFogFYoHYWCAWyAf2R4ABACyK/2sJyPQZAAAAAElFTkSuQmCC";
 
-XPCOMUtils.defineLazyGetter(this, "Strings", function() {
-  return Services.strings.createBundle("chrome://feeds/locale/feeds.properties");
+var Strings = {};
+[
+  ["brand", "chrome://branding/locale/brand.properties"],
+  ["feeds", "chrome://feeds/locale/feeds.properties"]
+].forEach(function (aStringBundle) {
+  let [name, bundle] = aStringBundle;
+  XPCOMUtils.defineLazyGetter(Strings, name, function() {
+    return Services.strings.createBundle(bundle);
+  });
 });
+
 
 XPCOMUtils.defineLazyGetter(this, "FeedHelper", function() {
   let win = Services.wm.getMostRecentWindow("navigator:browser");
@@ -97,7 +105,7 @@ function loadFeed(feed) {
 
   // Add our own custom handler.
   handlers.push({
-    name: Strings.GetStringFromName("prompt.firefoxHomepage"),
+    name: Strings.brand.GetStringFromName("brandShortName"),
     action: addFeedPanel
   });
 
@@ -105,7 +113,7 @@ function loadFeed(feed) {
   let p = new Prompt({
     window: chromeWin,
     // XXX: In Firefox 31+, we can get this string from browser.properties.
-    title: Strings.GetStringFromName("prompt.subscribeWith")
+    title: Strings.feeds.GetStringFromName("prompt.subscribeWith")
   });
   p.setSingleChoiceItems(handlers.map(function (handler) {
     return { label: handler.name };
@@ -126,7 +134,7 @@ function addFeedPanel(feed) {
   // Check to see if a panel for the feed already exists.
   if (feedPanelExists(feed.href)) {
     let chromeWin = Services.wm.getMostRecentWindow("navigator:browser");
-    chromeWin.NativeWindow.toast.show(Strings.GetStringFromName("toast.feedAlreadyExists"), "short");
+    chromeWin.NativeWindow.toast.show(Strings.feeds.GetStringFromName("toast.feedAlreadyExists"), "short");
     return;
   }
 
@@ -151,8 +159,16 @@ function addFeedPanel(feed) {
     saveFeedItems(parsedFeed, datasetId);
     storeFeed(feed.href, title, panelId, datasetId);
 
+    let toastMessage;
+    try {
+      toastMessage = Strings.feeds.formatStringFromName("toast.addedToHomepage", [Strings.brand.GetStringFromName("brandShortName")], 1)
+    } catch (e) {
+      // Fallback to old string if locale isn't updated.
+      toastMessage = Strings.feeds.GetStringFromName("toast.addedToFirefoxHomepage");
+    }
+
     let chromeWin = Services.wm.getMostRecentWindow("navigator:browser");
-    chromeWin.NativeWindow.toast.show(Strings.GetStringFromName("toast.addedToFirefoxHomepage"), "short");
+    chromeWin.NativeWindow.toast.show(toastMessage, "short");
   });
 
   // Add periodic sync to update feed once per hour.
@@ -289,7 +305,7 @@ function updatePageAction(window, tab) {
 
   gPageActionId = window.NativeWindow.pageactions.add({
     icon: gPageActionIcon,
-    title: Strings.GetStringFromName("pageAction.subscribeToPage"),
+    title: Strings.feeds.GetStringFromName("pageAction.subscribeToPage"),
     clickCallback: function onSubscribeClicked() {
       // Follow the regular "Subscribe" menu button action.
       let args = JSON.stringify({ tabId: tab.id });

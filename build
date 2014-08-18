@@ -8,7 +8,7 @@ XPI=homefeeds.xpi
 # Aurora = org.mozilla.fennec_aurora
 # Beta = org.mozilla.firefox_beta
 # Release = org.mozilla.firefox
-ANDROID_APP_ID=org.mozilla.firefox_beta
+ANDROID_APP_ID=org.mozilla.fennec
 
 # List add-on files here
 zip -r $XPI bootstrap.js \
