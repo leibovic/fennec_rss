@@ -88,12 +88,13 @@ var FeedHelper = {
       }
 
       // Try to find an image in the summary
-      if (!item.image_url) {
+      if (!item.image_url && entry.summary) {
         let doc = browser.contentDocument;
         let div = doc.createElement("div");
         div.innerHTML = entry.summary.text;
         let img = div.querySelector("img");
-        if (img) {
+        // Ignore wordpress pixel images
+        if (img && !img.src.startsWith("http://pixel.wp.com/")) {
           item.image_url = img.src;
         }
       }
